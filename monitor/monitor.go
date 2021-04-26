@@ -8,8 +8,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-
-	"github.com/davecgh/go-spew/spew"
 )
 
 type Line struct {
@@ -64,7 +62,6 @@ func Monitor(ctx context.Context, address string, password string) (chan Line, e
 			}
 			l := line.FindStringSubmatch(resp)
 			if len(l) != 6 {
-				spew.Dump(l)
 				continue
 			}
 			ts, err := strconv.ParseFloat(l[1], 32)
@@ -73,7 +70,15 @@ func Monitor(ctx context.Context, address string, password string) (chan Line, e
 				break
 			}
 			n, err := strconv.Atoi(l[2])
+			if err != nil {
+				fmt.Println(err)
+				break
+			}
 			port, err := strconv.Atoi(l[4])
+			if err != nil {
+				fmt.Println(err)
+				break
+			}
 			lines <- Line{
 				ts:      float32(ts),
 				n:       n,
