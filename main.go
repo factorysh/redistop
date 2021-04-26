@@ -32,10 +32,13 @@ func main() {
 	ui.Render(p)
 
 	cmds := widgets.NewTable()
+	cmds.RowSeparator = false
 	cmds.Title = "By command"
+	cmds.ColumnWidths = []int{30, 10}
 	cmds.SetRect(0, 3, 40, 40)
 
 	ips := widgets.NewTable()
+	ips.RowSeparator = false
 	ips.Title = "By IP"
 	ips.SetRect(41, 3, 80, 40)
 
