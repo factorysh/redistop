@@ -6,9 +6,81 @@ import (
 	"github.com/factorysh/redistop/monitor"
 )
 
+type Line struct {
+	data map[string][]int
+	max  int
+	poz  int
+}
+
+func NewLine(max int) *Line {
+	return &Line{
+		data: make(map[string][]int),
+		max:  max,
+		poz:  0,
+	}
+}
+
+func (l *Line) Incr(key string) {
+	_, ok := l.data[key]
+	if !ok {
+		l.data[key] = make([]int, l.max)
+	}
+	l.data[key][l.poz] += 1
+}
+
+func (l *Line) Next() {
+	l.poz += 1
+	if l.poz >= l.max {
+		l.poz = 0
+	}
+}
+
+type SortedLine struct {
+	K string
+	V []float64
+}
+
+func (l Line) Values() []SortedLine {
+	b := make(ByValue, len(l.data))
+	i := 0
+	for k, v := range l.data {
+		b[i] = KV{
+			K: k,
+			V: v[l.poz],
+		}
+		i++
+	}
+	sort.Sort(b)
+	r := make([]SortedLine, len(l.data))
+	for i, kv := range b {
+		r[i] = SortedLine{
+			K: kv.K,
+			V: make([]float64, l.max),
+		}
+		for j := 0; j < l.max; j++ {
+			p := j + l.poz + 1
+			if p <= 0 {
+				p += l.max
+			}
+			if p >= l.max {
+				p -= l.max
+			}
+			r[i].V[j] = float64(l.data[kv.K][p])
+		}
+	}
+	return r
+}
+
 type Stats struct {
-	Commands map[string]int
-	Ips      map[string]int
+	Commands *Line
+	Ips      *Line
+}
+
+func New(size int) *Stats {
+	return &Stats{
+		Commands: NewLine(size),
+		Ips:      NewLine(size),
+	}
 }
 
 type KV struct {
@@ -38,29 +110,12 @@ func Count(data map[string]int) ByValue {
 	return r
 }
 
-func New() *Stats {
-	return &Stats{
-		Commands: make(map[string]int),
-		Ips:      make(map[string]int),
-	}
-}
-
 func (s *Stats) Feed(line monitor.Line) {
-	_, ok := s.Commands[line.Command]
-	if ok {
-		s.Commands[line.Command] += 1
-	} else {
-		s.Commands[line.Command] = 1
-	}
-	_, ok = s.Ips[line.IP]
-	if ok {
-		s.Ips[line.IP] += 1
-	} else {
-		s.Ips[line.IP] = 1
-	}
+	s.Commands.Incr(line.Command)
+	s.Ips.Incr(line.IP)
 }
 
-func (s *Stats) Reset() {
-	s.Commands = make(map[string]int)
-	s.Ips = make(map[string]int)
+func (s *Stats) Next() {
+	s.Commands.Next()
+	s.Ips.Next()
 }
