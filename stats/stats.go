@@ -18,9 +18,14 @@ type KV struct {
 
 type ByValue []KV
 
-func (a ByValue) Len() int           { return len(a) }
-func (a ByValue) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
-func (a ByValue) Less(i, j int) bool { return a[i].V < a[j].V }
+func (a ByValue) Len() int      { return len(a) }
+func (a ByValue) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+func (a ByValue) Less(i, j int) bool {
+	if a[i].V == a[j].V {
+		return a[i].K < a[j].K
+	}
+	return a[i].V < a[j].V
+}
 
 func Count(data map[string]int) ByValue {
 	r := make(ByValue, len(data))
