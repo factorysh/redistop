@@ -13,9 +13,9 @@ import (
 type Line struct {
 	ts      float32
 	n       int
-	ip      string
+	IP      string
 	port    int
-	command string
+	Command string
 }
 
 func Monitor(ctx context.Context, address string, password string) (chan Line, error) {
@@ -82,9 +82,9 @@ func Monitor(ctx context.Context, address string, password string) (chan Line, e
 			lines <- Line{
 				ts:      float32(ts),
 				n:       n,
-				ip:      l[3],
+				IP:      l[3],
 				port:    port,
-				command: strings.ToUpper(l[5]),
+				Command: strings.ToUpper(l[5]),
 			}
 		}
 	}()
