@@ -31,16 +31,20 @@ func main() {
 	p.SetRect(0, 0, 80, 3)
 	ui.Render(p)
 
+	graph := widgets.NewSparkline()
+	graphBox := widgets.NewSparklineGroup(graph)
+	graphBox.SetRect(0, 3, 80, 8)
+
 	cmds := widgets.NewTable()
 	cmds.RowSeparator = false
 	cmds.Title = "By command"
 	cmds.ColumnWidths = []int{30, 10}
-	cmds.SetRect(0, 3, 40, 40)
+	cmds.SetRect(0, 8, 40, 40)
 
 	ips := widgets.NewTable()
 	ips.RowSeparator = false
 	ips.Title = "By IP"
-	ips.SetRect(41, 3, 80, 40)
+	ips.SetRect(41, 8, 80, 40)
 
 	statz := stats.New()
 	lock := sync.Mutex{}
@@ -52,6 +56,9 @@ func main() {
 		}
 	}()
 	go func() {
+		poz := 0
+		maxValues := 78
+		values := make([]int, maxValues)
 		for {
 			time.Sleep(2 * time.Second)
 
@@ -60,6 +67,28 @@ func main() {
 			ip := stats.Count(statz.Ips)
 			statz.Reset()
 			lock.Unlock()
+			total := 0
+			for _, i := range s {
+				total += i.V
+			}
+			values[poz] = total
+			poz++
+			if poz > maxValues {
+				poz = 0
+			}
+			graph.Data = make([]float64, maxValues)
+			m := 0
+			for i := 0; i < maxValues; i++ {
+				j := i + poz
+				if j >= maxValues {
+					j -= maxValues
+				}
+				graph.Data[i] = float64(values[j])
+				if values[i] > m {
+					m = values[i]
+				}
+			}
+			graphBox.Title = fmt.Sprintf("Commands [max: %d]", m)
 
 			size := len(s)
 			cmds.Rows = make([][]string, size)
@@ -77,7 +106,7 @@ func main() {
 				}
 			}
 
-			ui.Render(cmds, ips)
+			ui.Render(cmds, ips, graphBox)
 		}
 	}()
 
