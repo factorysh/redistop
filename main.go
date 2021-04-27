@@ -30,19 +30,18 @@ func main() {
 	p.Text = fmt.Sprintf("redis://%s", os.Args[1])
 	p.SetRect(0, 0, 80, 3)
 	ui.Render(p)
-
-	cmds := widgets.NewTable()
-	cmds.RowSeparator = false
+	for _, b := range ui.BARS {
+		fmt.Println(string(b))
+	}
+	cmds := widgets.NewSparklineGroup()
 	cmds.Title = "By command"
-	cmds.ColumnWidths = []int{30, 10}
-	cmds.SetRect(0, 3, 40, 40)
+	cmds.SetRect(0, 3, 40, 60)
 
-	ips := widgets.NewTable()
-	ips.RowSeparator = false
+	ips := widgets.NewSparklineGroup()
 	ips.Title = "By IP"
-	ips.SetRect(41, 3, 80, 40)
+	ips.SetRect(41, 3, 80, 60)
 
-	statz := stats.New()
+	statz := stats.New(10)
 	lock := sync.Mutex{}
 	go func() {
 		for line := range lines {
@@ -56,24 +55,30 @@ func main() {
 			time.Sleep(2 * time.Second)
 
 			lock.Lock()
-			s := stats.Count(statz.Commands)
-			ip := stats.Count(statz.Ips)
-			statz.Reset()
+			s := statz.Commands.Values()
+			ip := statz.Ips.Values()
+			statz.Next()
 			lock.Unlock()
 
 			size := len(s)
-			cmds.Rows = make([][]string, size)
+			cmds.Sparklines = make([]*widgets.Sparkline, size)
 			if size > 0 {
 				for i, kv := range s {
-					cmds.Rows[size-i-1] = []string{kv.K, fmt.Sprintf("%d", kv.V)}
+					cmds.Sparklines[size-i-1] = widgets.NewSparkline()
+					//cmds.Sparklines[size-i-1].MaxHeight = 5
+					cmds.Sparklines[size-i-1].Data = kv.V
+					cmds.Sparklines[size-i-1].Title = fmt.Sprintf("%s %d", kv.K, int(kv.V[len(kv.V)-1]))
 				}
 			}
 
 			size = len(ip)
-			ips.Rows = make([][]string, size)
+			ips.Sparklines = make([]*widgets.Sparkline, size)
 			if size > 0 {
 				for i, kv := range ip {
-					ips.Rows[size-i-1] = []string{kv.K, fmt.Sprintf("%d", kv.V)}
+					ips.Sparklines[size-i-1] = widgets.NewSparkline()
+					ips.Sparklines[size-i-1].MaxHeight = 2
+					ips.Sparklines[size-i-1].Data = kv.V
+					ips.Sparklines[size-i-1].Title = kv.K
 				}
 			}
 
