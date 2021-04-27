@@ -16,12 +16,12 @@ type Line struct {
 	Command string
 }
 
-func Monitor(ctx context.Context, address string, password string) (chan Line, error) {
-	conn, reader, err := RedisConn(address, password)
+func (r *RedisServer) Monitor(ctx context.Context) (chan Line, error) {
+	conn, err := r.Conn()
 	if err != nil {
 		return nil, err
 	}
-	_, err = fmt.Fprintln(conn, "MONITOR")
+	_, err = fmt.Fprintln(conn.conn, "MONITOR")
 	if err != nil {
 		return nil, err
 	}
@@ -33,7 +33,7 @@ func Monitor(ctx context.Context, address string, password string) (chan Line, e
 	}
 	go func() {
 		for {
-			resp, err := reader.ReadString('\n')
+			resp, err := conn.reader.ReadString('\n')
 			if err != nil {
 				fmt.Println(err)
 				break

@@ -15,9 +15,14 @@ import (
 )
 
 func main() {
-	lines, err := monitor.Monitor(context.TODO(), os.Args[1], os.Args[2])
+	var password string
+	if len(os.Args) > 1 {
+		password = os.Args[2]
+	}
+	redis := monitor.Redis(os.Args[1], password)
+	lines, err := redis.Monitor(context.TODO())
 	if err != nil {
-		log.Fatalf("", err)
+		log.Fatalf("Bim %p", err)
 	}
 
 	if err := ui.Init(); err != nil {
@@ -25,9 +30,11 @@ func main() {
 	}
 	defer ui.Close()
 
-	p := widgets.NewParagraph()
+	p := widgets.NewTable()
 	p.Title = "Redis Top"
-	p.Text = fmt.Sprintf("redis://%s", os.Args[1])
+	p.Rows = make([][]string, 1)
+	p.Rows[0] = make([]string, 4)
+	p.Rows[0][0] = os.Args[1]
 	p.SetRect(0, 0, 80, 3)
 	ui.Render(p)
 
@@ -53,6 +60,24 @@ func main() {
 			lock.Lock()
 			statz.Feed(line)
 			lock.Unlock()
+		}
+	}()
+	redisStats, err := redis.Stats()
+	if err != nil {
+		log.Fatalf("Statz %p", err)
+	}
+	go func() {
+		for {
+			kv, err := redisStats.Values()
+			if err != nil {
+				log.Printf("Stats Error : %p", err)
+				continue
+			}
+			p.Rows[0][1] = fmt.Sprintf("%s ops/s", kv["instantaneous_ops_per_sec"])
+			p.Rows[0][2] = fmt.Sprintf("in: %s kps", kv["instantaneous_input_kbps"])
+			p.Rows[0][3] = fmt.Sprintf("out: %s kps", kv["instantaneous_output_kbps"])
+			ui.Render(p)
+			time.Sleep(time.Second)
 		}
 	}()
 	go func() {
