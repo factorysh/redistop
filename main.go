@@ -73,7 +73,7 @@ func main() {
 			}
 			values[poz] = total
 			poz++
-			if poz > maxValues {
+			if poz >= maxValues {
 				poz = 0
 			}
 			graph.Data = make([]float64, maxValues)
