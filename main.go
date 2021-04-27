@@ -14,6 +14,8 @@ import (
 	"github.com/gizak/termui/v3/widgets"
 )
 
+const freq = 2 // Stats per commands and per IPs, every freq seconds
+
 func main() {
 	var password string
 	if len(os.Args) > 1 {
@@ -44,13 +46,13 @@ func main() {
 
 	cmds := widgets.NewTable()
 	cmds.RowSeparator = false
-	cmds.Title = "By command"
+	cmds.Title = "By command/s"
 	cmds.ColumnWidths = []int{30, 10}
 	cmds.SetRect(0, 8, 40, 40)
 
 	ips := widgets.NewTable()
 	ips.RowSeparator = false
-	ips.Title = "By IP"
+	ips.Title = "By IP/s"
 	ips.SetRect(41, 8, 80, 40)
 
 	statz := stats.New()
@@ -85,7 +87,7 @@ func main() {
 		maxValues := 78
 		values := make([]int, maxValues)
 		for {
-			time.Sleep(2 * time.Second)
+			time.Sleep(freq * time.Second)
 
 			lock.Lock()
 			s := stats.Count(statz.Commands)
@@ -113,13 +115,13 @@ func main() {
 					m = values[i]
 				}
 			}
-			graphBox.Title = fmt.Sprintf("Commands [current: %d max: %d]", total, m)
+			graphBox.Title = fmt.Sprintf("Commands [current: %d max: %d]", total/freq, m/freq)
 
 			size := len(s)
 			cmds.Rows = make([][]string, size)
 			if size > 0 {
 				for i, kv := range s {
-					cmds.Rows[size-i-1] = []string{kv.K, fmt.Sprintf("%d", kv.V)}
+					cmds.Rows[size-i-1] = []string{kv.K, fmt.Sprintf("%.1f", float64(kv.V)/freq)}
 				}
 			}
 
@@ -127,7 +129,7 @@ func main() {
 			ips.Rows = make([][]string, size)
 			if size > 0 {
 				for i, kv := range ip {
-					ips.Rows[size-i-1] = []string{kv.K, fmt.Sprintf("%d", kv.V)}
+					ips.Rows[size-i-1] = []string{kv.K, fmt.Sprintf("%.1f", float64(kv.V)/freq)}
 				}
 			}
 
