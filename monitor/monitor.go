@@ -1,10 +1,8 @@
 package monitor
 
 import (
-	"bufio"
 	"context"
 	"fmt"
-	"net"
 	"regexp"
 	"strconv"
 	"strings"
@@ -19,29 +17,9 @@ type Line struct {
 }
 
 func Monitor(ctx context.Context, address string, password string) (chan Line, error) {
-	conn, err := net.Dial("tcp", address)
+	conn, reader, err := RedisConn(address, password)
 	if err != nil {
 		return nil, err
-	}
-
-	_, err = fmt.Fprintln(conn, "PING")
-	if err != nil {
-		return nil, err
-	}
-	reader := bufio.NewReader(conn)
-	resp, err := reader.ReadString('\n')
-	if err != nil {
-		return nil, err
-	}
-	if strings.HasPrefix(resp, "-NOAUTH") {
-		fmt.Fprintf(conn, "AUTH %s\n", password)
-		resp, err = reader.ReadString('\n')
-		if err != nil {
-			return nil, err
-		}
-		if !strings.HasPrefix(resp, "+OK") {
-			return nil, fmt.Errorf("AUTH not ok : %s", resp)
-		}
 	}
 	_, err = fmt.Fprintln(conn, "MONITOR")
 	if err != nil {
@@ -55,7 +33,7 @@ func Monitor(ctx context.Context, address string, password string) (chan Line, e
 	}
 	go func() {
 		for {
-			resp, err = reader.ReadString('\n')
+			resp, err := reader.ReadString('\n')
 			if err != nil {
 				fmt.Println(err)
 				break
