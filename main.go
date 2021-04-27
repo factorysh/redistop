@@ -88,7 +88,7 @@ func main() {
 					m = values[i]
 				}
 			}
-			graphBox.Title = fmt.Sprintf("Commands [max: %d]", m)
+			graphBox.Title = fmt.Sprintf("Commands [current: %d max: %d]", total, m)
 
 			size := len(s)
 			cmds.Rows = make([][]string, size)
