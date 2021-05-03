@@ -17,14 +17,38 @@ import (
 const freq = 2 // Stats per commands and per IPs, every freq seconds
 
 func main() {
-	var password string
 	if len(os.Args) > 1 {
+		if os.Args[1] == "-h" || os.Args[1] == "--help" {
+			fmt.Println(`RedisTop top for Redis, group by command and client IP
+
+Redis is local, without auth:
+
+redistop
+
+Redis is somewhere :
+
+  redistop localhost:6379
+
+Redis has a password:
+
+  redistop localhost:6379 password
+
+`)
+			return
+		}
+	}
+	var password string
+	if len(os.Args) > 2 {
 		password = os.Args[2]
 	}
-	redis := monitor.Redis(os.Args[1], password)
+	host := "localhost:6379"
+	if len(os.Args) > 1 {
+		host = os.Args[1]
+	}
+	redis := monitor.Redis(host, password)
 	lines, err := redis.Monitor(context.TODO())
 	if err != nil {
-		log.Fatalf("Bim %p", err)
+		log.Fatal(err.Error())
 	}
 
 	if err := ui.Init(); err != nil {
@@ -36,7 +60,7 @@ func main() {
 	p.Title = "Redis Top"
 	p.Rows = make([][]string, 1)
 	p.Rows[0] = make([]string, 4)
-	p.Rows[0][0] = os.Args[1]
+	p.Rows[0][0] = host
 	p.SetRect(0, 0, 80, 3)
 	ui.Render(p)
 

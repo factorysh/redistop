@@ -2,6 +2,7 @@ package monitor
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"net"
 	"strings"
@@ -40,6 +41,9 @@ func (r *RedisServer) Conn() (*RedisConn, error) {
 		return nil, err
 	}
 	if strings.HasPrefix(resp, "-NOAUTH") {
+		if r.password == "" {
+			return nil, errors.New("Password is mandatory")
+		}
 		fmt.Fprintf(conn, "AUTH %s\n", r.password)
 		resp, err = reader.ReadString('\n')
 		if err != nil {
