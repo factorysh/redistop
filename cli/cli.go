@@ -27,6 +27,7 @@ func Top(host, password string) error {
 		return fmt.Errorf("failed to initialize termui: %v", err)
 	}
 	defer ui.Close()
+	_, height := ui.TerminalDimensions()
 
 	p := widgets.NewTable()
 	p.Title = "Redis Top"
@@ -38,18 +39,22 @@ func Top(host, password string) error {
 
 	graph := widgets.NewSparkline()
 	graphBox := widgets.NewSparklineGroup(graph)
-	graphBox.SetRect(0, 3, 80, 8)
+	fatGraphY := 8
+	if height > 40 {
+		fatGraphY = 16
+	}
+	graphBox.SetRect(0, 3, 80, fatGraphY)
 
 	cmds := widgets.NewTable()
 	cmds.RowSeparator = false
 	cmds.Title = "By command/s"
 	cmds.ColumnWidths = []int{30, 10}
-	cmds.SetRect(0, 8, 40, 40)
+	cmds.SetRect(0, fatGraphY, 40, height)
 
 	ips := widgets.NewTable()
 	ips.RowSeparator = false
 	ips.Title = "By IP/s"
-	ips.SetRect(41, 8, 80, 40)
+	ips.SetRect(41, fatGraphY, 80, height)
 
 	statz := stats.New()
 	lock := sync.Mutex{}
