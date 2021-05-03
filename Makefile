@@ -21,6 +21,6 @@ docker-build:
 		make
 	docker run -t \
 		-v `pwd`:/src \
-		-w /src \
+		-w /src/bin \
 		bearstech/upx \
 		upx redistop
