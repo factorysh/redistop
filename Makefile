@@ -1,5 +1,13 @@
-build:
-	go build .
+GIT_VERSION?=$(shell git describe --tags --always --abbrev=42 --dirty)
+
+build: bin
+	go build \
+		-o bin/redistop \
+		-ldflags "-X github.com/factorysh/redistop/version.version=$(GIT_VERSION)" \
+		.
+
+bin:
+	mkdir -p bin
 
 docker-build:
 	mkdir -p .gocache
