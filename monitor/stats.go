@@ -33,7 +33,7 @@ func (s *Stats) Values() (map[string]string, error) {
 		}
 		kv := strings.Split(resp, ":")
 		if len(kv) > 1 {
-			r[kv[0]] = kv[1]
+			r[kv[0]] = strings.Trim(kv[1], " \n\r")
 		}
 	}
 	return r, nil

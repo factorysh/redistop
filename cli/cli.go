@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strconv"
 	"sync"
 	"time"
 
@@ -76,9 +77,27 @@ func Top(host, password string) error {
 				log.Printf("Stats Error : %p", err)
 				continue
 			}
-			p.Rows[0][1] = fmt.Sprintf("%s ops/s", kv["instantaneous_ops_per_sec"])
-			p.Rows[0][2] = fmt.Sprintf("in: %s kps", kv["instantaneous_input_kbps"])
-			p.Rows[0][3] = fmt.Sprintf("out: %s kps", kv["instantaneous_output_kbps"])
+			ops, err := strconv.ParseFloat(kv["instantaneous_ops_per_sec"], 32)
+			if err != nil {
+				log.Printf("Float parse error: %s", err)
+				p.Rows[0][1] = "☠️"
+			} else {
+				p.Rows[0][1] = fmt.Sprintf("%s ops/s", DisplayUnit(ops))
+			}
+			iips, err := strconv.ParseFloat(kv["instantaneous_input_kbps"], 32)
+			if err != nil {
+				log.Printf("Float parse error: %s", err)
+				p.Rows[0][2] = "☠️"
+			} else {
+				p.Rows[0][2] = fmt.Sprintf("in: %sb/s", DisplayUnit(iips))
+			}
+			iops, err := strconv.ParseFloat(kv["instantaneous_output_kbps"], 32)
+			if err != nil {
+				log.Printf("Float parse error: %s", err)
+				p.Rows[0][3] = "☠️"
+			} else {
+				p.Rows[0][3] = fmt.Sprintf("out: %sb/s", DisplayUnit(iops))
+			}
 			ui.Render(p)
 			time.Sleep(time.Second)
 		}
