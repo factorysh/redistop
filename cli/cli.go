@@ -28,14 +28,20 @@ func Top(host, password string) error {
 		return fmt.Errorf("failed to initialize termui: %v", err)
 	}
 	defer ui.Close()
-	_, height := ui.TerminalDimensions()
+	width, height := ui.TerminalDimensions()
+	var myWidth int
+	if width >= 120 {
+		myWidth = 120
+	} else {
+		myWidth = 80
+	}
 
 	p := widgets.NewTable()
 	p.Title = "Redis Top"
 	p.Rows = make([][]string, 1)
 	p.Rows[0] = make([]string, 4)
 	p.Rows[0][0] = host
-	p.SetRect(0, 0, 80, 3)
+	p.SetRect(0, 0, myWidth, 3)
 	ui.Render(p)
 
 	graph := widgets.NewSparkline()
@@ -44,7 +50,7 @@ func Top(host, password string) error {
 	if height > 40 {
 		fatGraphY = 16
 	}
-	graphBox.SetRect(0, 3, 80, fatGraphY)
+	graphBox.SetRect(0, 3, myWidth, fatGraphY)
 
 	cmds := widgets.NewTable()
 	cmds.RowSeparator = false
@@ -55,7 +61,7 @@ func Top(host, password string) error {
 	ips := widgets.NewTable()
 	ips.RowSeparator = false
 	ips.Title = "By IP/s"
-	ips.SetRect(41, fatGraphY, 80, height)
+	ips.SetRect(41, fatGraphY, myWidth, height)
 
 	statz := stats.New()
 	lock := sync.Mutex{}
@@ -104,7 +110,7 @@ func Top(host, password string) error {
 	}()
 	go func() {
 		poz := 0
-		maxValues := 78
+		maxValues := myWidth - 2
 		values := make([]int, maxValues)
 		for {
 			time.Sleep(freq * time.Second)
