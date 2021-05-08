@@ -1,59 +1,51 @@
 package monitor
 
 import (
-	"bufio"
-	"errors"
-	"fmt"
-	"net"
-	"strings"
-)
+	"time"
 
-type RedisConn struct {
-	conn   net.Conn
-	reader *bufio.Reader
-}
+	"github.com/mediocregopher/radix/v3"
+)
 
 type RedisServer struct {
 	address  string
 	password string
+	pool     *radix.Pool
 }
 
-func Redis(address, password string) *RedisServer {
-	return &RedisServer{
+func Redis(address, password string) (*RedisServer, error) {
+	r := &RedisServer{
 		address:  address,
 		password: password,
 	}
+	var err error
+	r.pool, err = r.makePool()
+	if err != nil {
+		return nil, err
+	}
+	return r, nil
 }
 
-func (r *RedisServer) Conn() (*RedisConn, error) {
-	conn, err := net.Dial("tcp", r.address)
-	if err != nil {
-		return nil, err
+func (r *RedisServer) makePool() (*radix.Pool, error) {
+	opts := []radix.DialOpt{
+		radix.DialConnectTimeout(2 * time.Second),
 	}
-
-	_, err = fmt.Fprintln(conn, "PING")
-	if err != nil {
-		return nil, err
+	if r.password != "" {
+		opts = append(opts, radix.DialAuthPass(r.password))
 	}
-	reader := bufio.NewReader(conn)
-	resp, err := reader.ReadString('\n')
-	if err != nil {
-		return nil, err
-	}
-	if strings.HasPrefix(resp, "-NOAUTH") {
-		if r.password == "" {
-			return nil, errors.New("Password is mandatory")
-		}
-		fmt.Fprintf(conn, "AUTH %s\n", r.password)
-		resp, err = reader.ReadString('\n')
+	p, err := radix.NewPool("tcp", r.address, 1, radix.PoolConnFunc(func(network, addr string) (radix.Conn, error) {
+		conn, err := radix.Dial("tcp", r.address, opts...)
 		if err != nil {
 			return nil, err
 		}
-		if !strings.HasPrefix(resp, "+OK") {
-			return nil, fmt.Errorf("AUTH not ok : %s", resp)
+		var pong string
+		err = conn.Do(radix.Cmd(&pong, "PING"))
+		if err != nil {
+			return nil, err
 		}
+		return conn, nil
+	}))
+	if err != nil {
+		return nil, err
 	}
-	return &RedisConn{
-		conn:   conn,
-		reader: reader}, nil
+	return p, nil
 }

@@ -4,5 +4,6 @@ go 1.16
 
 require (
 	github.com/gizak/termui/v3 v3.1.0
+	github.com/mediocregopher/radix/v3 v3.7.0
 	github.com/stretchr/testify v1.7.0
 )

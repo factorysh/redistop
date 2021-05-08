@@ -19,7 +19,10 @@ const freq = 2 // Stats per commands and per IPs, every freq seconds
 func Top(host, password string) error {
 	log.Printf("Connecting to redis://%s\n", host)
 
-	redis := monitor.Redis(host, password)
+	redis, err := monitor.Redis(host, password)
+	if err != nil {
+		return err
+	}
 	lines, err := redis.Monitor(context.TODO())
 	if err != nil {
 		return err
@@ -39,7 +42,11 @@ func Top(host, password string) error {
 	p := widgets.NewTable()
 	p.Title = "Redis Top"
 	p.Rows = make([][]string, 1)
-	p.Rows[0] = make([]string, 4)
+	if myWidth > 80 {
+		p.Rows[0] = make([]string, 6)
+	} else {
+		p.Rows[0] = make([]string, 4)
+	}
 	p.Rows[0][0] = host
 	p.SetRect(0, 0, myWidth, 3)
 	ui.Render(p)
@@ -51,6 +58,7 @@ func Top(host, password string) error {
 		fatGraphY = 16
 	}
 	graphBox.SetRect(0, 3, myWidth, fatGraphY)
+	ui.Render(graphBox)
 
 	cmds := widgets.NewTable()
 	cmds.RowSeparator = false
@@ -61,7 +69,34 @@ func Top(host, password string) error {
 	ips := widgets.NewTable()
 	ips.RowSeparator = false
 	ips.Title = "By IP/s"
-	ips.SetRect(41, fatGraphY, myWidth, height)
+	ips.SetRect(41, fatGraphY, 80, height)
+
+	if myWidth > 80 {
+		memories := widgets.NewTable()
+		memories.RowSeparator = false
+		memories.Title = "Memory"
+		memories.SetRect(81, fatGraphY, 120, height)
+
+		go func() {
+			for {
+				m, err := redis.Memory()
+				if err != nil {
+					log.Printf("Memory Error : %s", err.Error())
+					continue
+				}
+				p.Rows[0][4] = fmt.Sprintf("keys: %d", m.KeysCount)
+				p.Rows[0][5] = fmt.Sprintf("mem: %s", DisplayUnit(float64(m.PeakAllocated)))
+				if memories.Rows == nil || len(memories.Rows) == 0 {
+					memories.Rows = m.Table()
+				}
+				if len(memories.Rows) > 0 {
+					ui.Render(memories)
+				}
+				time.Sleep(5 * time.Second)
+			}
+		}()
+
+	}
 
 	statz := stats.New()
 	lock := sync.Mutex{}
@@ -72,34 +107,34 @@ func Top(host, password string) error {
 			lock.Unlock()
 		}
 	}()
-	redisStats, err := redis.Stats()
-	if err != nil {
-		log.Fatalf("Statz %p", err)
-	}
 	go func() {
 		for {
-			kv, err := redisStats.Values()
+			kv, err := redis.Stats()
 			if err != nil {
-				log.Printf("Stats Error : %p", err)
+				log.Printf("Stats Error : %s", err.Error())
 				continue
 			}
-			ops, err := strconv.ParseFloat(kv["instantaneous_ops_per_sec"], 32)
-			if err != nil {
-				log.Printf("Float parse error: %s", err)
-				p.Rows[0][1] = "☠️"
+			if kv["instantaneous_ops_per_sec"] == "" {
+				p.Rows[0][1] = "️0 op"
 			} else {
-				p.Rows[0][1] = fmt.Sprintf("%s ops/s", DisplayUnit(ops))
+				ops, err := strconv.ParseFloat(kv["instantaneous_ops_per_sec"], 32)
+				if err != nil {
+					log.Printf("Float parse error: %s %s", kv["instantaneous_ops_per_sec"], err)
+					p.Rows[0][1] = "☠️"
+				} else {
+					p.Rows[0][1] = fmt.Sprintf("%s ops/s", DisplayUnit(ops))
+				}
 			}
 			iips, err := strconv.ParseFloat(kv["instantaneous_input_kbps"], 32)
 			if err != nil {
-				log.Printf("Float parse error: %s", err)
+				log.Printf("Float parse error: %s %s", kv["instantaneous_input_kbps"], err)
 				p.Rows[0][2] = "☠️"
 			} else {
 				p.Rows[0][2] = fmt.Sprintf("in: %sb/s", DisplayUnit(iips))
 			}
 			iops, err := strconv.ParseFloat(kv["instantaneous_output_kbps"], 32)
 			if err != nil {
-				log.Printf("Float parse error: %s", err)
+				log.Printf("Float parse error: %s %s", kv["instantaneous_output_kbps"], err)
 				p.Rows[0][3] = "☠️"
 			} else {
 				p.Rows[0][3] = fmt.Sprintf("out: %sb/s", DisplayUnit(iops))
