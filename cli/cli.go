@@ -39,15 +39,26 @@ func Top(host, password string) error {
 		myWidth = 80
 	}
 
+	infoServer, err := redis.InfoServer()
+	if err != nil {
+		return err
+	}
 	p := widgets.NewTable()
-	p.Title = "Redis Top"
+	p.Title = fmt.Sprintf("Redis Top -[ v%s/%s pid: %s port: %s hz: %s uptime: %sd]",
+		infoServer["redis_version"],
+		infoServer["multiplexing_api"],
+		infoServer["process_id"],
+		infoServer["tcp_port"],
+		infoServer["hz"],
+		infoServer["uptime_in_days"],
+	)
 	p.Rows = make([][]string, 1)
 	if myWidth > 80 {
 		p.Rows[0] = make([]string, 6)
 	} else {
 		p.Rows[0] = make([]string, 4)
 	}
-	p.Rows[0][0] = host
+	p.Rows[0][0] = fmt.Sprintf("")
 	p.SetRect(0, 0, myWidth, 3)
 	ui.Render(p)
 
