@@ -17,6 +17,8 @@ top for Redis, group by command and client IP
 
 Usage:
   redistop [[localhost:6379] password]
+
+You can set REDISTOP_PASSWORD
 `, version.Version())
 			return
 		}
@@ -28,6 +30,10 @@ Usage:
 	var password string
 	if len(os.Args) > 2 {
 		password = os.Args[2]
+	}
+	p := os.Getenv("REDISTOP_PASSWORD")
+	if p != "" {
+		password = p
 	}
 
 	log.Fatal(cli.Top(host, password))
