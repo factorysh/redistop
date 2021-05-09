@@ -68,7 +68,6 @@ func (m *MemoryStats) Table() [][]string {
 	return [][]string{
 		{"peak allocated", fmt.Sprintf("%d", m.PeakAllocated)},
 		{"dataset", fmt.Sprintf("%d bytes", m.DatasetBytes)},
-		{"keys", fmt.Sprintf("%d", m.KeysCount)},
 		{"fragmentation", fmt.Sprintf("%.2f", m.Fragmentation)},
 		{"repl.backlog", fmt.Sprintf("%d", m.ReplicationBacklog)},
 	}

@@ -82,11 +82,23 @@ func Top(host, password string) error {
 	ips.Title = "By IP/s"
 	ips.SetRect(41, fatGraphY, 80, height)
 
+	pile := NewPile(81, fatGraphY, 39)
+
+	keyspaces := widgets.NewTable()
+	pile.Add(keyspaces)
+	keyspaces.RowSeparator = false
+	keyspaces.Title = "Keyspace"
+	keyspaces.Rows = make([][]string, 2)
+
 	if myWidth > 80 {
+
 		memories := widgets.NewTable()
+		pile.Add(memories)
 		memories.RowSeparator = false
 		memories.Title = "Memory"
-		memories.SetRect(81, fatGraphY, 120, height)
+		memories.Rows = make([][]string, 4)
+
+		pile.ComputePosition()
 
 		go func() {
 			for {
@@ -97,10 +109,8 @@ func Top(host, password string) error {
 				}
 				p.Rows[0][4] = fmt.Sprintf("keys: %d", m.KeysCount)
 				p.Rows[0][5] = fmt.Sprintf("mem: %s", DisplayUnit(float64(m.PeakAllocated)))
-				if memories.Rows == nil || len(memories.Rows) == 0 {
-					memories.Rows = m.Table()
-				}
-				if len(memories.Rows) > 0 {
+				memories.Rows = m.Table()
+				if len(memories.Rows) > 0 && len(memories.Rows[0]) > 0 {
 					ui.Render(memories)
 				}
 				time.Sleep(5 * time.Second)
@@ -151,6 +161,12 @@ func Top(host, password string) error {
 				p.Rows[0][3] = fmt.Sprintf("out: %sb/s", DisplayUnit(iops))
 			}
 			ui.Render(p)
+
+			if myWidth > 80 {
+				keyspaces.Rows[0] = []string{"hits", kv["keyspace_hits"]}
+				keyspaces.Rows[1] = []string{"misess", kv["keyspace_misses"]}
+				ui.Render(keyspaces)
+			}
 			time.Sleep(time.Second)
 		}
 	}()
