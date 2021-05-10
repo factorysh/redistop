@@ -44,7 +44,7 @@ func Top(host, password string) error {
 		return err
 	}
 	p := widgets.NewTable()
-	p.Title = fmt.Sprintf("Redis Top -[ v%s/%s pid: %s port: %s hz: %s uptime: %sd]",
+	p.Title = fmt.Sprintf("Redis Top -[ v%s/%s pid: %s port: %s hz: %s uptime: %sd ]",
 		infoServer["redis_version"],
 		infoServer["multiplexing_api"],
 		infoServer["process_id"],
@@ -58,7 +58,7 @@ func Top(host, password string) error {
 	} else {
 		p.Rows[0] = make([]string, 4)
 	}
-	p.Rows[0][0] = fmt.Sprintf("")
+	p.Rows[0][0] = ""
 	p.SetRect(0, 0, myWidth, 3)
 	ui.Render(p)
 
