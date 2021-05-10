@@ -105,11 +105,18 @@ func Top(host, password string) error {
 				m, err := redis.Memory()
 				if err != nil {
 					log.Printf("Memory Error : %s", err.Error())
-					continue
+				} else {
+					p.Rows[0][4] = fmt.Sprintf("keys: %d", m.KeysCount)
+					p.Rows[0][5] = fmt.Sprintf("mem: %s", DisplayUnit(float64(m.PeakAllocated)))
+					memories.Rows = m.Table()
 				}
-				p.Rows[0][4] = fmt.Sprintf("keys: %d", m.KeysCount)
-				p.Rows[0][5] = fmt.Sprintf("mem: %s", DisplayUnit(float64(m.PeakAllocated)))
-				memories.Rows = m.Table()
+				kv, err := redis.InfoMemory()
+				if err != nil {
+					log.Printf("Info Memory Error : %s", err.Error())
+				} else {
+					memories.Title = fmt.Sprintf("Memory [ %s ]", kv["maxmemory_policy"])
+				}
+
 				if len(memories.Rows) > 0 && len(memories.Rows[0]) > 0 {
 					ui.Render(memories)
 				}
