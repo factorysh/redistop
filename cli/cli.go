@@ -129,44 +129,69 @@ func Top(host, password string) error {
 		}
 	}()
 	go func() {
+		var cpu *monitor.CPU
 		for {
 			kv, err := redis.Stats()
 			if err != nil {
 				log.Printf("Stats Error : %s", err.Error())
-				continue
-			}
-			if kv["instantaneous_ops_per_sec"] == "" {
-				p.Rows[0][1] = "️0 op"
 			} else {
-				ops, err := strconv.ParseFloat(kv["instantaneous_ops_per_sec"], 32)
-				if err != nil {
-					log.Printf("Float parse error: %s %s", kv["instantaneous_ops_per_sec"], err)
-					p.Rows[0][1] = "☠️"
+				if kv["instantaneous_ops_per_sec"] == "" {
+					p.Rows[0][1] = "️0 op"
 				} else {
-					p.Rows[0][1] = fmt.Sprintf("%s ops/s", DisplayUnit(ops))
+					ops, err := strconv.ParseFloat(kv["instantaneous_ops_per_sec"], 32)
+					if err != nil {
+						log.Printf("Float parse error: %s %s", kv["instantaneous_ops_per_sec"], err)
+						p.Rows[0][1] = "☠️"
+					} else {
+						p.Rows[0][1] = fmt.Sprintf("%s ops/s", DisplayUnit(ops))
+					}
+				}
+				iips, err := strconv.ParseFloat(kv["instantaneous_input_kbps"], 32)
+				if err != nil {
+					log.Printf("Float parse error: %s %s", kv["instantaneous_input_kbps"], err)
+					p.Rows[0][2] = "☠️"
+				} else {
+					p.Rows[0][2] = fmt.Sprintf("in: %sb/s", DisplayUnit(iips))
+				}
+				iops, err := strconv.ParseFloat(kv["instantaneous_output_kbps"], 32)
+				if err != nil {
+					log.Printf("Float parse error: %s %s", kv["instantaneous_output_kbps"], err)
+					p.Rows[0][3] = "☠️"
+				} else {
+					p.Rows[0][3] = fmt.Sprintf("out: %sb/s", DisplayUnit(iops))
 				}
 			}
-			iips, err := strconv.ParseFloat(kv["instantaneous_input_kbps"], 32)
-			if err != nil {
-				log.Printf("Float parse error: %s %s", kv["instantaneous_input_kbps"], err)
-				p.Rows[0][2] = "☠️"
-			} else {
-				p.Rows[0][2] = fmt.Sprintf("in: %sb/s", DisplayUnit(iips))
-			}
-			iops, err := strconv.ParseFloat(kv["instantaneous_output_kbps"], 32)
-			if err != nil {
-				log.Printf("Float parse error: %s %s", kv["instantaneous_output_kbps"], err)
-				p.Rows[0][3] = "☠️"
-			} else {
-				p.Rows[0][3] = fmt.Sprintf("out: %sb/s", DisplayUnit(iops))
-			}
-			ui.Render(p)
 
 			if myWidth > 80 {
 				keyspaces.Rows[0] = []string{"hits", kv["keyspace_hits"]}
 				keyspaces.Rows[1] = []string{"misess", kv["keyspace_misses"]}
 				ui.Render(keyspaces)
 			}
+
+			kv, err = redis.InfoCpu()
+			if err != nil {
+				log.Printf("CPU Error : %s", err.Error())
+			} else {
+				sys, err := strconv.ParseFloat(kv["used_cpu_sys"], 64)
+				if err != nil {
+					log.Printf("%s %s", kv["used_cpu_sys"], err.Error())
+				} else {
+					user, err := strconv.ParseFloat(kv["used_cpu_user"], 64)
+					if err != nil {
+						log.Printf("%s %s", kv["used_cpu_sys"], err.Error())
+					} else {
+						if cpu == nil {
+							cpu = monitor.NewCPU(sys, user)
+						} else {
+							s, u := cpu.Tick(sys, user)
+							p.Rows[0][0] = fmt.Sprintf("s: %.1f%% u: %.1f%%", s, u)
+						}
+					}
+				}
+			}
+
+			ui.Render(p)
+
 			time.Sleep(time.Second)
 		}
 	}()
