@@ -16,15 +16,6 @@ import (
 
 const freq = 2 // Stats per commands and per IPs, every freq seconds
 
-type Logger struct {
-	block *widgets.Paragraph
-}
-
-func (l *Logger) Printf(tpl string, args ...interface{}) {
-	l.block.Text = fmt.Sprintf(tpl, args...)
-	ui.Render(l.block)
-}
-
 func Top(host, password string) error {
 	_log.Printf("Connecting to redis://%s\n", host)
 
