@@ -36,18 +36,18 @@ func Top(host, password string) error {
 		myWidth = 80
 	}
 
-	infoServer, err := redis.InfoServer()
+	infos, err := redis.Info()
 	if err != nil {
 		return err
 	}
 	p := widgets.NewTable()
 	p.Title = fmt.Sprintf("Redis Top -[ v%s/%s pid: %s port: %s hz: %s uptime: %sd ]",
-		infoServer["redis_version"],
-		infoServer["multiplexing_api"],
-		infoServer["process_id"],
-		infoServer["tcp_port"],
-		infoServer["hz"],
-		infoServer["uptime_in_days"],
+		infos["redis_version"],
+		infos["multiplexing_api"],
+		infos["process_id"],
+		infos["tcp_port"],
+		infos["hz"],
+		infos["uptime_in_days"],
 	)
 	p.Rows = make([][]string, 1)
 	if myWidth > 80 {
@@ -116,7 +116,7 @@ func Top(host, password string) error {
 					p.Rows[0][5] = fmt.Sprintf("mem: %s", DisplayUnit(float64(m.PeakAllocated)))
 					memories.Rows = m.Table()
 				}
-				kv, err := redis.InfoMemory()
+				kv, err := redis.Info()
 				if err != nil {
 					log.Printf("Info Memory Error : %s", err.Error())
 				} else {
@@ -173,7 +173,7 @@ func Top(host, password string) error {
 	go func() {
 		var cpu *monitor.CPU
 		for {
-			kv, err := redis.Stats()
+			kv, err := redis.Info()
 			if err != nil {
 				log.Printf("Stats Error : %s", err.Error())
 			} else {
@@ -210,7 +210,7 @@ func Top(host, password string) error {
 				ui.Render(keyspaces)
 			}
 
-			kv, err = redis.InfoCpu()
+			kv, err = redis.Info()
 			if err != nil {
 				log.Printf("CPU Error : %s", err.Error())
 			} else {

@@ -2,8 +2,6 @@ package monitor
 
 import (
 	"time"
-
-	"github.com/mediocregopher/radix/v3"
 )
 
 type CPU struct {
@@ -29,13 +27,4 @@ func (c *CPU) Tick(sys, user float64) (float64, float64) {
 	c.user = user
 	c.ts = now
 	return s, u
-}
-
-func (r *RedisServer) InfoCpu() (map[string]string, error) {
-	var stats string
-	err := r.pool.Do(radix.Cmd(&stats, "INFO", "CPU"))
-	if err != nil {
-		return nil, err
-	}
-	return BulkTable(stats)
 }

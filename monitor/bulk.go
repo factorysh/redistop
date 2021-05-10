@@ -1,6 +1,8 @@
 package monitor
 
-import "strings"
+import (
+	"strings"
+)
 
 func BulkTable(bulk string) (map[string]string, error) {
 	s := make(map[string]string)

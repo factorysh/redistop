@@ -72,12 +72,3 @@ func (m *MemoryStats) Table() [][]string {
 		{"repl.backlog", fmt.Sprintf("%d", m.ReplicationBacklog)},
 	}
 }
-
-func (r *RedisServer) InfoMemory() (map[string]string, error) {
-	var stats string
-	err := r.pool.Do(radix.Cmd(&stats, "INFO", "MEMORY"))
-	if err != nil {
-		return nil, err
-	}
-	return BulkTable(stats)
-}
