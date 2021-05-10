@@ -3,7 +3,7 @@ package cli
 import (
 	"context"
 	"fmt"
-	"log"
+	_log "log"
 	"strconv"
 	"sync"
 	"time"
@@ -16,17 +16,23 @@ import (
 
 const freq = 2 // Stats per commands and per IPs, every freq seconds
 
+type Logger struct {
+	block *widgets.Paragraph
+}
+
+func (l *Logger) Printf(tpl string, args ...interface{}) {
+	l.block.Text = fmt.Sprintf(tpl, args...)
+	ui.Render(l.block)
+}
+
 func Top(host, password string) error {
-	log.Printf("Connecting to redis://%s\n", host)
+	_log.Printf("Connecting to redis://%s\n", host)
 
 	redis, err := monitor.Redis(host, password)
 	if err != nil {
 		return err
 	}
-	lines, err := redis.Monitor(context.TODO())
-	if err != nil {
-		return err
-	}
+	lines, monitorErrors := redis.Monitor(context.TODO())
 	if err := ui.Init(); err != nil {
 		return fmt.Errorf("failed to initialize termui: %v", err)
 	}
@@ -75,12 +81,12 @@ func Top(host, password string) error {
 	cmds.RowSeparator = false
 	cmds.Title = "By command/s"
 	cmds.ColumnWidths = []int{30, 10}
-	cmds.SetRect(0, fatGraphY, 40, height)
+	cmds.SetRect(0, fatGraphY, 40, height-3)
 
 	ips := widgets.NewTable()
 	ips.RowSeparator = false
 	ips.Title = "By IP/s"
-	ips.SetRect(41, fatGraphY, 80, height)
+	ips.SetRect(41, fatGraphY, 80, height-3)
 
 	pile := NewPile(81, fatGraphY, 39)
 
@@ -89,6 +95,15 @@ func Top(host, password string) error {
 	keyspaces.RowSeparator = false
 	keyspaces.Title = "Keyspace"
 	keyspaces.Rows = make([][]string, 2)
+
+	errorPanel := widgets.NewParagraph()
+	errorPanel.Title = "Error"
+	errorPanel.SetRect(0, height-3, myWidth, height)
+	ui.Render(errorPanel)
+
+	log := &Logger{
+		block: errorPanel,
+	}
 
 	if myWidth > 80 {
 
@@ -128,6 +143,14 @@ func Top(host, password string) error {
 
 	statz := stats.New()
 	lock := sync.Mutex{}
+
+	go func() {
+		for {
+			err := <-monitorErrors
+			log.Printf("%v", err)
+		}
+	}()
+
 	go func() {
 		for line := range lines {
 			lock.Lock()
@@ -135,6 +158,7 @@ func Top(host, password string) error {
 			lock.Unlock()
 		}
 	}()
+
 	go func() {
 		var cpu *monitor.CPU
 		for {
@@ -202,6 +226,7 @@ func Top(host, password string) error {
 			time.Sleep(time.Second)
 		}
 	}()
+
 	go func() {
 		poz := 0
 		maxValues := myWidth - 2
@@ -253,7 +278,9 @@ func Top(host, password string) error {
 				}
 			}
 
-			ui.Render(cmds, ips, graphBox)
+			if len(ips.Rows) > 0 {
+				ui.Render(cmds, ips, graphBox)
+			}
 		}
 	}()
 
