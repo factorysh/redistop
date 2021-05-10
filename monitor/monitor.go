@@ -19,7 +19,7 @@ type Line struct {
 	Command string
 }
 
-func (r *RedisServer) Monitor(ctx context.Context) (chan Line, chan error) {
+func (r *RedisServer) Monitor(ctx context.Context, evt func(bool)) (chan Line, chan error) {
 	// +1619454979.381488 [1 172.29.1.2:57676] "brpop"
 	line := regexp.MustCompile(`^\+(\d+\.\d+) \[(\d+) ([\d.]+):(\d+)] "(.*?)"`)
 
@@ -31,6 +31,7 @@ func (r *RedisServer) Monitor(ctx context.Context) (chan Line, chan error) {
 			conn, err := net.Dial("tcp", r.address)
 			if err != nil {
 				errors <- err
+				evt(false)
 				time.Sleep(5 * time.Second)
 				continue
 			}
@@ -40,16 +41,19 @@ func (r *RedisServer) Monitor(ctx context.Context) (chan Line, chan error) {
 				resp, err := reader.ReadString('\n')
 				if err != nil {
 					errors <- err
+					evt(false)
 					continue
 				}
 				if !strings.HasPrefix(resp, "+OK") {
 					errors <- fmt.Errorf("auth failed, bad password")
+					evt(false)
 					continue
 				}
 			}
 			_, err = fmt.Fprintln(conn, "MONITOR")
 			if err != nil {
 				errors <- err
+				evt(false)
 				continue
 			}
 			for {
@@ -77,6 +81,7 @@ func (r *RedisServer) Monitor(ctx context.Context) (chan Line, chan error) {
 					errors <- fmt.Errorf("monitor %v %v", l, err)
 					break
 				}
+				evt(true)
 				lines <- Line{
 					ts:      float32(ts),
 					n:       n,
@@ -85,6 +90,7 @@ func (r *RedisServer) Monitor(ctx context.Context) (chan Line, chan error) {
 					Command: strings.ToUpper(l[5]),
 				}
 			}
+			evt(false)
 		}
 	}()
 

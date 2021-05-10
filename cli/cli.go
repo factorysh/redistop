@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	_log "log"
@@ -23,7 +24,6 @@ func Top(host, password string) error {
 	if err != nil {
 		return err
 	}
-	lines, monitorErrors := redis.Monitor(context.TODO())
 	if err := ui.Init(); err != nil {
 		return fmt.Errorf("failed to initialize termui: %v", err)
 	}
@@ -134,6 +134,26 @@ func Top(host, password string) error {
 
 	statz := stats.New()
 	lock := sync.Mutex{}
+
+	lines, monitorErrors := redis.Monitor(context.TODO(), func(ok bool) {
+		if ok {
+			ui.Render(graphBox)
+		} else {
+			msg := "Not connected"
+			argh := widgets.NewParagraph()
+			argh.SetRect(20, 6, myWidth-20, 11)
+			buff := &bytes.Buffer{}
+			buff.WriteRune('\n')
+			for i := 0; i < (myWidth-40-len(msg))/2; i++ {
+				buff.WriteRune(' ')
+			}
+			buff.WriteString(msg)
+			argh.Text = buff.String()
+			argh.TextStyle.Fg = ui.ColorRed
+			argh.Block.BorderStyle.Fg = ui.ColorRed
+			ui.Render(argh)
+		}
+	})
 
 	go func() {
 		for {
