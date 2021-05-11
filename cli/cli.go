@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	_log "log"
@@ -12,100 +11,9 @@ import (
 	"github.com/factorysh/redistop/monitor"
 	"github.com/factorysh/redistop/stats"
 	ui "github.com/gizak/termui/v3"
-	"github.com/gizak/termui/v3/widgets"
 )
 
 const freq = 2 // Stats per commands and per IPs, every freq seconds
-
-type App struct {
-	header     *widgets.Table
-	graph      *widgets.Sparkline
-	graphBox   *widgets.SparklineGroup
-	cmds       *widgets.Table
-	ips        *widgets.Table
-	memories   *widgets.Table
-	pile       *Pile
-	keyspaces  *widgets.Table
-	errorPanel *widgets.Paragraph
-	myWidth    int
-}
-
-func NewApp(width, height int) *App {
-	app := &App{}
-	if width >= 120 {
-		app.myWidth = 120
-	} else {
-		app.myWidth = 80
-	}
-
-	app.header = widgets.NewTable()
-	app.header.Rows = make([][]string, 1)
-	if app.myWidth > 80 {
-		app.header.Rows[0] = make([]string, 6)
-	} else {
-		app.header.Rows[0] = make([]string, 4)
-	}
-	app.header.Rows[0][0] = ""
-	app.header.SetRect(0, 0, app.myWidth, 3)
-
-	app.graph = widgets.NewSparkline()
-	app.graphBox = widgets.NewSparklineGroup(app.graph)
-	fatGraphY := 8
-	if height > 40 {
-		fatGraphY = 16
-	}
-	app.graphBox.SetRect(0, 3, app.myWidth, fatGraphY)
-
-	app.cmds = widgets.NewTable()
-	app.cmds.RowSeparator = false
-	app.cmds.Title = "By command/s"
-	app.cmds.ColumnWidths = []int{30, 10}
-	app.cmds.SetRect(0, fatGraphY, 40, height-3)
-
-	app.ips = widgets.NewTable()
-	app.ips.RowSeparator = false
-	app.ips.Title = "By IP/s"
-	app.ips.SetRect(41, fatGraphY, 80, height-3)
-
-	app.pile = NewPile(81, fatGraphY, 39)
-
-	app.keyspaces = widgets.NewTable()
-	app.pile.Add(app.keyspaces)
-	app.keyspaces.RowSeparator = false
-	app.keyspaces.Title = "Keyspace"
-	app.keyspaces.Rows = make([][]string, 2)
-
-	app.errorPanel = widgets.NewParagraph()
-	app.errorPanel.Title = "Error"
-	app.errorPanel.SetRect(0, height-3, app.myWidth, height)
-
-	if app.myWidth > 80 {
-		app.memories = widgets.NewTable()
-		app.pile.Add(app.memories)
-		app.memories.RowSeparator = false
-		app.memories.Title = "Memory"
-		app.memories.Rows = make([][]string, 4)
-	}
-
-	app.pile.ComputePosition()
-
-	return app
-}
-
-func (a *App) Alert(msg string) {
-	argh := widgets.NewParagraph()
-	argh.SetRect(20, 6, a.myWidth-20, 11)
-	buff := &bytes.Buffer{}
-	buff.WriteRune('\n')
-	for i := 0; i < (a.myWidth-40-len(msg))/2; i++ {
-		buff.WriteRune(' ')
-	}
-	buff.WriteString(msg)
-	argh.Text = buff.String()
-	argh.TextStyle.Fg = ui.ColorRed
-	argh.Block.BorderStyle.Fg = ui.ColorRed
-	ui.Render(argh)
-}
 
 func Top(host, password string) error {
 	_log.Printf("Connecting to redis://%s\n", host)
@@ -119,13 +27,13 @@ func Top(host, password string) error {
 	}
 	defer ui.Close()
 
-	width, height := ui.TerminalDimensions()
-	app := NewApp(width, height)
+	app := NewApp()
 
 	infos, err := redis.Info()
 	if err != nil {
 		return err
 	}
+
 	app.header.Title = fmt.Sprintf("Redis Top -[ v%s/%s pid: %s port: %s hz: %s uptime: %sd ]",
 		infos["redis_version"],
 		infos["multiplexing_api"],
@@ -135,16 +43,14 @@ func Top(host, password string) error {
 		infos["uptime_in_days"],
 	)
 	ui.Render(app.header)
-
 	ui.Render(app.graphBox)
-
 	ui.Render(app.errorPanel)
 
 	log := &Logger{
 		block: app.errorPanel,
 	}
 
-	if width < 120 {
+	if app.myWidth > 80 {
 
 		go func() {
 			for {
