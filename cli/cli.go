@@ -17,17 +17,30 @@ import (
 
 const freq = 2 // Stats per commands and per IPs, every freq seconds
 
+type App struct {
+	header     *widgets.Table
+	graph      *widgets.Sparkline
+	graphBox   *widgets.SparklineGroup
+	cmds       *widgets.Table
+	ips        *widgets.Table
+	pile       *Pile
+	keyspaces  *widgets.Table
+	errorPanel *widgets.Paragraph
+}
+
 func Top(host, password string) error {
 	_log.Printf("Connecting to redis://%s\n", host)
-
 	redis, err := monitor.Redis(host, password)
 	if err != nil {
 		return err
 	}
+
 	if err := ui.Init(); err != nil {
 		return fmt.Errorf("failed to initialize termui: %v", err)
 	}
 	defer ui.Close()
+	app := &App{}
+
 	width, height := ui.TerminalDimensions()
 	var myWidth int
 	if width >= 120 {
@@ -40,8 +53,8 @@ func Top(host, password string) error {
 	if err != nil {
 		return err
 	}
-	p := widgets.NewTable()
-	p.Title = fmt.Sprintf("Redis Top -[ v%s/%s pid: %s port: %s hz: %s uptime: %sd ]",
+	app.header = widgets.NewTable()
+	app.header.Title = fmt.Sprintf("Redis Top -[ v%s/%s pid: %s port: %s hz: %s uptime: %sd ]",
 		infos["redis_version"],
 		infos["multiplexing_api"],
 		infos["process_id"],
@@ -49,43 +62,43 @@ func Top(host, password string) error {
 		infos["hz"],
 		infos["uptime_in_days"],
 	)
-	p.Rows = make([][]string, 1)
+	app.header.Rows = make([][]string, 1)
 	if myWidth > 80 {
-		p.Rows[0] = make([]string, 6)
+		app.header.Rows[0] = make([]string, 6)
 	} else {
-		p.Rows[0] = make([]string, 4)
+		app.header.Rows[0] = make([]string, 4)
 	}
-	p.Rows[0][0] = ""
-	p.SetRect(0, 0, myWidth, 3)
-	ui.Render(p)
+	app.header.Rows[0][0] = ""
+	app.header.SetRect(0, 0, myWidth, 3)
+	ui.Render(app.header)
 
-	graph := widgets.NewSparkline()
-	graphBox := widgets.NewSparklineGroup(graph)
+	app.graph = widgets.NewSparkline()
+	app.graphBox = widgets.NewSparklineGroup(app.graph)
 	fatGraphY := 8
 	if height > 40 {
 		fatGraphY = 16
 	}
-	graphBox.SetRect(0, 3, myWidth, fatGraphY)
-	ui.Render(graphBox)
+	app.graphBox.SetRect(0, 3, myWidth, fatGraphY)
+	ui.Render(app.graphBox)
 
-	cmds := widgets.NewTable()
-	cmds.RowSeparator = false
-	cmds.Title = "By command/s"
-	cmds.ColumnWidths = []int{30, 10}
-	cmds.SetRect(0, fatGraphY, 40, height-3)
+	app.cmds = widgets.NewTable()
+	app.cmds.RowSeparator = false
+	app.cmds.Title = "By command/s"
+	app.cmds.ColumnWidths = []int{30, 10}
+	app.cmds.SetRect(0, fatGraphY, 40, height-3)
 
-	ips := widgets.NewTable()
-	ips.RowSeparator = false
-	ips.Title = "By IP/s"
-	ips.SetRect(41, fatGraphY, 80, height-3)
+	app.ips = widgets.NewTable()
+	app.ips.RowSeparator = false
+	app.ips.Title = "By IP/s"
+	app.ips.SetRect(41, fatGraphY, 80, height-3)
 
-	pile := NewPile(81, fatGraphY, 39)
+	app.pile = NewPile(81, fatGraphY, 39)
 
-	keyspaces := widgets.NewTable()
-	pile.Add(keyspaces)
-	keyspaces.RowSeparator = false
-	keyspaces.Title = "Keyspace"
-	keyspaces.Rows = make([][]string, 2)
+	app.keyspaces = widgets.NewTable()
+	app.pile.Add(app.keyspaces)
+	app.keyspaces.RowSeparator = false
+	app.keyspaces.Title = "Keyspace"
+	app.keyspaces.Rows = make([][]string, 2)
 
 	errorPanel := widgets.NewParagraph()
 	errorPanel.Title = "Error"
@@ -99,12 +112,12 @@ func Top(host, password string) error {
 	if myWidth > 80 {
 
 		memories := widgets.NewTable()
-		pile.Add(memories)
+		app.pile.Add(memories)
 		memories.RowSeparator = false
 		memories.Title = "Memory"
 		memories.Rows = make([][]string, 4)
 
-		pile.ComputePosition()
+		app.pile.ComputePosition()
 
 		go func() {
 			for {
@@ -112,8 +125,8 @@ func Top(host, password string) error {
 				if err != nil {
 					log.Printf("Memory Error : %s", err.Error())
 				} else {
-					p.Rows[0][4] = fmt.Sprintf("keys: %d", m.KeysCount)
-					p.Rows[0][5] = fmt.Sprintf("mem: %s", DisplayUnit(float64(m.PeakAllocated)))
+					app.header.Rows[0][4] = fmt.Sprintf("keys: %d", m.KeysCount)
+					app.header.Rows[0][5] = fmt.Sprintf("mem: %s", DisplayUnit(float64(m.PeakAllocated)))
 					memories.Rows = m.Table()
 				}
 				kv, err := redis.Info()
@@ -137,7 +150,7 @@ func Top(host, password string) error {
 
 	lines, monitorErrors := redis.Monitor(context.TODO(), func(ok bool) {
 		if ok {
-			ui.Render(graphBox)
+			ui.Render(app.graphBox)
 		} else {
 			msg := "Not connected"
 			argh := widgets.NewParagraph()
@@ -175,39 +188,39 @@ func Top(host, password string) error {
 		for {
 			kv, err := redis.Info()
 			if err != nil {
-				log.Printf("Stats Error : %s", err.Error())
+				log.Printf("Info Error : %s", err.Error())
 			} else {
 				if kv["instantaneous_ops_per_sec"] == "" {
-					p.Rows[0][1] = "️0 op"
+					app.header.Rows[0][1] = "️0 op"
 				} else {
 					ops, err := strconv.ParseFloat(kv["instantaneous_ops_per_sec"], 32)
 					if err != nil {
 						log.Printf("Float parse error: %s %s", kv["instantaneous_ops_per_sec"], err)
-						p.Rows[0][1] = "☠️"
+						app.header.Rows[0][1] = "☠️"
 					} else {
-						p.Rows[0][1] = fmt.Sprintf("%s ops/s", DisplayUnit(ops))
+						app.header.Rows[0][1] = fmt.Sprintf("%s ops/s", DisplayUnit(ops))
 					}
 				}
 				iips, err := strconv.ParseFloat(kv["instantaneous_input_kbps"], 32)
 				if err != nil {
 					log.Printf("Float parse error: %s %s", kv["instantaneous_input_kbps"], err)
-					p.Rows[0][2] = "☠️"
+					app.header.Rows[0][2] = "☠️"
 				} else {
-					p.Rows[0][2] = fmt.Sprintf("in: %sb/s", DisplayUnit(iips))
+					app.header.Rows[0][2] = fmt.Sprintf("in: %sb/s", DisplayUnit(iips))
 				}
 				iops, err := strconv.ParseFloat(kv["instantaneous_output_kbps"], 32)
 				if err != nil {
 					log.Printf("Float parse error: %s %s", kv["instantaneous_output_kbps"], err)
-					p.Rows[0][3] = "☠️"
+					app.header.Rows[0][3] = "☠️"
 				} else {
-					p.Rows[0][3] = fmt.Sprintf("out: %sb/s", DisplayUnit(iops))
+					app.header.Rows[0][3] = fmt.Sprintf("out: %sb/s", DisplayUnit(iops))
 				}
 			}
 
 			if myWidth > 80 {
-				keyspaces.Rows[0] = []string{"hits", kv["keyspace_hits"]}
-				keyspaces.Rows[1] = []string{"misess", kv["keyspace_misses"]}
-				ui.Render(keyspaces)
+				app.keyspaces.Rows[0] = []string{"hits", kv["keyspace_hits"]}
+				app.keyspaces.Rows[1] = []string{"misess", kv["keyspace_misses"]}
+				ui.Render(app.keyspaces)
 			}
 
 			kv, err = redis.Info()
@@ -226,13 +239,13 @@ func Top(host, password string) error {
 							cpu = monitor.NewCPU(sys, user)
 						} else {
 							s, u := cpu.Tick(sys, user)
-							p.Rows[0][0] = fmt.Sprintf("s: %.1f%% u: %.1f%%", s, u)
+							app.header.Rows[0][0] = fmt.Sprintf("s: %.1f%% u: %.1f%%", s, u)
 						}
 					}
 				}
 			}
 
-			ui.Render(p)
+			ui.Render(app.header)
 
 			time.Sleep(time.Second)
 		}
@@ -259,38 +272,38 @@ func Top(host, password string) error {
 			if poz >= maxValues {
 				poz = 0
 			}
-			graph.Data = make([]float64, maxValues)
+			app.graph.Data = make([]float64, maxValues)
 			m := 0
 			for i := 0; i < maxValues; i++ {
 				j := i + poz
 				if j >= maxValues {
 					j -= maxValues
 				}
-				graph.Data[i] = float64(values[j])
+				app.graph.Data[i] = float64(values[j])
 				if values[i] > m {
 					m = values[i]
 				}
 			}
-			graphBox.Title = fmt.Sprintf("Commands [current: %d max: %d]", total/freq, m/freq)
+			app.graphBox.Title = fmt.Sprintf("Commands [current: %d max: %d]", total/freq, m/freq)
 
 			size := len(s)
-			cmds.Rows = make([][]string, size)
+			app.cmds.Rows = make([][]string, size)
 			if size > 0 {
 				for i, kv := range s {
-					cmds.Rows[size-i-1] = []string{kv.K, fmt.Sprintf("%.1f", float64(kv.V)/freq)}
+					app.cmds.Rows[size-i-1] = []string{kv.K, fmt.Sprintf("%.1f", float64(kv.V)/freq)}
 				}
 			}
 
 			size = len(ip)
-			ips.Rows = make([][]string, size)
+			app.ips.Rows = make([][]string, size)
 			if size > 0 {
 				for i, kv := range ip {
-					ips.Rows[size-i-1] = []string{kv.K, fmt.Sprintf("%.1f", float64(kv.V)/freq)}
+					app.ips.Rows[size-i-1] = []string{kv.K, fmt.Sprintf("%.1f", float64(kv.V)/freq)}
 				}
 			}
 
-			if len(ips.Rows) > 0 {
-				ui.Render(cmds, ips, graphBox)
+			if len(app.ips.Rows) > 0 {
+				ui.Render(app.cmds, app.ips, app.graphBox)
 			}
 		}
 	}()
