@@ -23,54 +23,30 @@ type App struct {
 	graphBox   *widgets.SparklineGroup
 	cmds       *widgets.Table
 	ips        *widgets.Table
+	memories   *widgets.Table
 	pile       *Pile
 	keyspaces  *widgets.Table
 	errorPanel *widgets.Paragraph
+	myWidth    int
 }
 
-func Top(host, password string) error {
-	_log.Printf("Connecting to redis://%s\n", host)
-	redis, err := monitor.Redis(host, password)
-	if err != nil {
-		return err
-	}
-
-	if err := ui.Init(); err != nil {
-		return fmt.Errorf("failed to initialize termui: %v", err)
-	}
-	defer ui.Close()
+func NewApp(width, height int) *App {
 	app := &App{}
-
-	width, height := ui.TerminalDimensions()
-	var myWidth int
 	if width >= 120 {
-		myWidth = 120
+		app.myWidth = 120
 	} else {
-		myWidth = 80
+		app.myWidth = 80
 	}
 
-	infos, err := redis.Info()
-	if err != nil {
-		return err
-	}
 	app.header = widgets.NewTable()
-	app.header.Title = fmt.Sprintf("Redis Top -[ v%s/%s pid: %s port: %s hz: %s uptime: %sd ]",
-		infos["redis_version"],
-		infos["multiplexing_api"],
-		infos["process_id"],
-		infos["tcp_port"],
-		infos["hz"],
-		infos["uptime_in_days"],
-	)
 	app.header.Rows = make([][]string, 1)
-	if myWidth > 80 {
+	if app.myWidth > 80 {
 		app.header.Rows[0] = make([]string, 6)
 	} else {
 		app.header.Rows[0] = make([]string, 4)
 	}
 	app.header.Rows[0][0] = ""
-	app.header.SetRect(0, 0, myWidth, 3)
-	ui.Render(app.header)
+	app.header.SetRect(0, 0, app.myWidth, 3)
 
 	app.graph = widgets.NewSparkline()
 	app.graphBox = widgets.NewSparklineGroup(app.graph)
@@ -78,8 +54,7 @@ func Top(host, password string) error {
 	if height > 40 {
 		fatGraphY = 16
 	}
-	app.graphBox.SetRect(0, 3, myWidth, fatGraphY)
-	ui.Render(app.graphBox)
+	app.graphBox.SetRect(0, 3, app.myWidth, fatGraphY)
 
 	app.cmds = widgets.NewTable()
 	app.cmds.RowSeparator = false
@@ -100,24 +75,76 @@ func Top(host, password string) error {
 	app.keyspaces.Title = "Keyspace"
 	app.keyspaces.Rows = make([][]string, 2)
 
-	errorPanel := widgets.NewParagraph()
-	errorPanel.Title = "Error"
-	errorPanel.SetRect(0, height-3, myWidth, height)
-	ui.Render(errorPanel)
+	app.errorPanel = widgets.NewParagraph()
+	app.errorPanel.Title = "Error"
+	app.errorPanel.SetRect(0, height-3, app.myWidth, height)
 
-	log := &Logger{
-		block: errorPanel,
+	if app.myWidth > 80 {
+		app.memories = widgets.NewTable()
+		app.pile.Add(app.memories)
+		app.memories.RowSeparator = false
+		app.memories.Title = "Memory"
+		app.memories.Rows = make([][]string, 4)
 	}
 
-	if myWidth > 80 {
+	app.pile.ComputePosition()
 
-		memories := widgets.NewTable()
-		app.pile.Add(memories)
-		memories.RowSeparator = false
-		memories.Title = "Memory"
-		memories.Rows = make([][]string, 4)
+	return app
+}
 
-		app.pile.ComputePosition()
+func (a *App) Alert(msg string) {
+	argh := widgets.NewParagraph()
+	argh.SetRect(20, 6, a.myWidth-20, 11)
+	buff := &bytes.Buffer{}
+	buff.WriteRune('\n')
+	for i := 0; i < (a.myWidth-40-len(msg))/2; i++ {
+		buff.WriteRune(' ')
+	}
+	buff.WriteString(msg)
+	argh.Text = buff.String()
+	argh.TextStyle.Fg = ui.ColorRed
+	argh.Block.BorderStyle.Fg = ui.ColorRed
+	ui.Render(argh)
+}
+
+func Top(host, password string) error {
+	_log.Printf("Connecting to redis://%s\n", host)
+	redis, err := monitor.Redis(host, password)
+	if err != nil {
+		return err
+	}
+
+	if err := ui.Init(); err != nil {
+		return fmt.Errorf("failed to initialize termui: %v", err)
+	}
+	defer ui.Close()
+
+	width, height := ui.TerminalDimensions()
+	app := NewApp(width, height)
+
+	infos, err := redis.Info()
+	if err != nil {
+		return err
+	}
+	app.header.Title = fmt.Sprintf("Redis Top -[ v%s/%s pid: %s port: %s hz: %s uptime: %sd ]",
+		infos["redis_version"],
+		infos["multiplexing_api"],
+		infos["process_id"],
+		infos["tcp_port"],
+		infos["hz"],
+		infos["uptime_in_days"],
+	)
+	ui.Render(app.header)
+
+	ui.Render(app.graphBox)
+
+	ui.Render(app.errorPanel)
+
+	log := &Logger{
+		block: app.errorPanel,
+	}
+
+	if width < 120 {
 
 		go func() {
 			for {
@@ -127,17 +154,17 @@ func Top(host, password string) error {
 				} else {
 					app.header.Rows[0][4] = fmt.Sprintf("keys: %d", m.KeysCount)
 					app.header.Rows[0][5] = fmt.Sprintf("mem: %s", DisplayUnit(float64(m.PeakAllocated)))
-					memories.Rows = m.Table()
+					app.memories.Rows = m.Table()
 				}
 				kv, err := redis.Info()
 				if err != nil {
 					log.Printf("Info Memory Error : %s", err.Error())
 				} else {
-					memories.Title = fmt.Sprintf("Memory [ %s ]", kv["maxmemory_policy"])
+					app.memories.Title = fmt.Sprintf("Memory [ %s ]", kv["maxmemory_policy"])
 				}
 
-				if len(memories.Rows) > 0 && len(memories.Rows[0]) > 0 {
-					ui.Render(memories)
+				if len(app.memories.Rows) > 0 && len(app.memories.Rows[0]) > 0 {
+					ui.Render(app.memories)
 				}
 				time.Sleep(5 * time.Second)
 			}
@@ -152,19 +179,7 @@ func Top(host, password string) error {
 		if ok {
 			ui.Render(app.graphBox)
 		} else {
-			msg := "Not connected"
-			argh := widgets.NewParagraph()
-			argh.SetRect(20, 6, myWidth-20, 11)
-			buff := &bytes.Buffer{}
-			buff.WriteRune('\n')
-			for i := 0; i < (myWidth-40-len(msg))/2; i++ {
-				buff.WriteRune(' ')
-			}
-			buff.WriteString(msg)
-			argh.Text = buff.String()
-			argh.TextStyle.Fg = ui.ColorRed
-			argh.Block.BorderStyle.Fg = ui.ColorRed
-			ui.Render(argh)
+			app.Alert("Not connected")
 		}
 	})
 
@@ -217,7 +232,7 @@ func Top(host, password string) error {
 				}
 			}
 
-			if myWidth > 80 {
+			if app.myWidth > 80 {
 				app.keyspaces.Rows[0] = []string{"hits", kv["keyspace_hits"]}
 				app.keyspaces.Rows[1] = []string{"misess", kv["keyspace_misses"]}
 				ui.Render(app.keyspaces)
@@ -253,7 +268,7 @@ func Top(host, password string) error {
 
 	go func() {
 		poz := 0
-		maxValues := myWidth - 2
+		maxValues := app.myWidth - 2
 		values := make([]int, maxValues)
 		for {
 			time.Sleep(freq * time.Second)
