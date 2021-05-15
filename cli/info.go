@@ -43,18 +43,7 @@ func InfoLoop(redis *monitor.RedisServer, app *App, log *Logger) {
 				} else {
 					app.header.Rows[0][3] = fmt.Sprintf("out: %sb/s", DisplayUnit(iops))
 				}
-			}
 
-			if app.myWidth > 80 {
-				app.keyspaces.Rows[0] = []string{"hits", kv["keyspace_hits"]}
-				app.keyspaces.Rows[1] = []string{"misess", kv["keyspace_misses"]}
-				ui.Render(app.keyspaces)
-			}
-
-			kv, err = redis.Info()
-			if err != nil {
-				log.Printf("CPU Error : %s", err.Error())
-			} else {
 				sys, err := strconv.ParseFloat(kv["used_cpu_sys"], 64)
 				if err != nil {
 					log.Printf("%s %s", kv["used_cpu_sys"], err.Error())
@@ -70,6 +59,35 @@ func InfoLoop(redis *monitor.RedisServer, app *App, log *Logger) {
 							app.header.Rows[0][0] = fmt.Sprintf("s: %.1f%% u: %.1f%%", s, u)
 						}
 					}
+				}
+
+				if app.myWidth > 80 {
+					app.keyspaces.Rows[0] = []string{"hits", kv["keyspace_hits"]}
+					app.keyspaces.Rows[1] = []string{"misess", kv["keyspace_misses"]}
+
+					app.pubsub.Rows[0] = []string{"channels", kv["pubsub_channels"]}
+					app.pubsub.Rows[1] = []string{"patterns", kv["pubsub_patterns"]}
+
+					app.clients.Rows[0] = []string{"connected", kv["connected_clients"]}
+					app.clients.Rows[1] = []string{"blocked", kv["blocked_clients"]}
+					app.clients.Rows[2] = []string{"tracking", kv["tracking_clients"]}
+
+					app.persistence.Rows[0] = []string{"status", ""}
+					if kv["loading"] == "1" {
+						app.persistence.Rows[0][1] = "loading"
+					} else {
+						if kv["rdb_bgsave_in_progress"] == "1" {
+							app.persistence.Rows[0][1] = "rdb_bgsave_in_progress"
+						} else {
+							if kv["aof_rewrite_in_progress"] == "1" {
+								app.persistence.Rows[0][1] = "aof_rewrite_in_progress"
+							}
+						}
+					}
+					app.persistence.Rows[1] = []string{"rdb_changes_since_last_save", kv["rdb_changes_since_last_save"]}
+					app.persistence.Rows[2] = []string{"rdb_last_save_time", kv["rdb_last_save_time"]}
+
+					ui.Render(app.keyspaces, app.pubsub, app.clients, app.persistence)
 				}
 			}
 

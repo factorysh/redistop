@@ -9,17 +9,20 @@ import (
 )
 
 type App struct {
-	header     *widgets.Table
-	graph      *widgets.Sparkline
-	graphBox   *widgets.SparklineGroup
-	splash     *widgets.Paragraph
-	cmds       *widgets.Table
-	ips        *widgets.Table
-	memories   *widgets.Table
-	pile       *Pile
-	keyspaces  *widgets.Table
-	errorPanel *widgets.Paragraph
-	myWidth    int
+	header      *widgets.Table
+	graph       *widgets.Sparkline
+	graphBox    *widgets.SparklineGroup
+	splash      *widgets.Paragraph
+	cmds        *widgets.Table
+	ips         *widgets.Table
+	memories    *widgets.Table
+	pile        *Pile
+	keyspaces   *widgets.Table
+	clients     *widgets.Table
+	persistence *widgets.Table
+	pubsub      *widgets.Table
+	errorPanel  *widgets.Paragraph
+	myWidth     int
 }
 
 func NewApp() *App {
@@ -112,11 +115,29 @@ func (a *App) fundation(width, height int) {
 		a.keyspaces.Title = "Keyspace"
 		a.keyspaces.Rows = make([][]string, 2)
 
+		a.pubsub = widgets.NewTable()
+		a.pile.Add(a.pubsub)
+		a.pubsub.RowSeparator = false
+		a.pubsub.Title = "Pubsub"
+		a.pubsub.Rows = make([][]string, 2)
+
 		a.memories = widgets.NewTable()
 		a.pile.Add(a.memories)
 		a.memories.RowSeparator = false
 		a.memories.Title = "Memory"
 		a.memories.Rows = make([][]string, 4)
+
+		a.clients = widgets.NewTable()
+		a.pile.Add(a.clients)
+		a.clients.RowSeparator = false
+		a.clients.Title = "Clients"
+		a.clients.Rows = make([][]string, 3)
+
+		a.persistence = widgets.NewTable()
+		a.pile.Add(a.persistence)
+		a.persistence.RowSeparator = false
+		a.persistence.Title = "Persistance"
+		a.persistence.Rows = make([][]string, 3)
 
 		a.pile.ComputePosition()
 	}
