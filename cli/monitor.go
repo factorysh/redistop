@@ -46,6 +46,8 @@ func MonitorLoop(redis *monitor.RedisServer, app *App, log *Logger) {
 		for {
 			time.Sleep(freq * time.Second)
 
+			app.splash.Text = ""
+			app.splash.Border = false
 			lock.Lock()
 			s := stats.Count(statz.Commands)
 			ip := stats.Count(statz.Ips)
@@ -91,7 +93,7 @@ func MonitorLoop(redis *monitor.RedisServer, app *App, log *Logger) {
 			}
 
 			if len(app.ips.Rows) > 0 {
-				ui.Render(app.cmds, app.ips, app.graphBox)
+				ui.Render(app.splash, app.cmds, app.ips, app.graphBox)
 			}
 		}
 	}()
