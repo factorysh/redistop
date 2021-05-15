@@ -2,6 +2,7 @@ package cli
 
 import (
 	"bytes"
+	"strings"
 
 	ui "github.com/gizak/termui/v3"
 	"github.com/gizak/termui/v3/widgets"
@@ -11,6 +12,7 @@ type App struct {
 	header     *widgets.Table
 	graph      *widgets.Sparkline
 	graphBox   *widgets.SparklineGroup
+	splash     *widgets.Paragraph
 	cmds       *widgets.Table
 	ips        *widgets.Table
 	memories   *widgets.Table
@@ -26,6 +28,26 @@ func NewApp() *App {
 	app.fundation(width, height)
 	return app
 }
+
+const art = `
+               _._
+          _.-''__ ''-._
+     _.-''    '.  '_.  ''-._
+ .-'' .-'''.  '''\/    _.,_ ''-._
+(    '      ,       .-'  | ',    )
+|'-._'-...-' __...-.''-._|'' _.-'|
+|    '-._   '._    /     _.-'    |
+ '-._    '-._  '-./  _.-'    _.-'
+|'-._'-._    '-.__.-'    _.-'_.-'|
+|    '-._'-._        _.-'_.-'    |
+ '-._    '-._'-.__.-'_.-'    _.-'
+|'-._'-._    '-.__.-'    _.-'_.-'|
+|    '-._'-._        _.-'_.-'    |
+ '-._    '-._'-.__.-'_.-'    _.-'
+     '-._    '-.__.-'    _.-'
+         '-._        _.-'
+             '-.__.-'
+`
 
 func (a *App) fundation(width, height int) {
 	if width >= 120 {
@@ -51,6 +73,20 @@ func (a *App) fundation(width, height int) {
 		fatGraphY = 16
 	}
 	a.graphBox.SetRect(0, 3, a.myWidth, fatGraphY)
+
+	a.splash = widgets.NewParagraph()
+	b := &bytes.Buffer{}
+	for i := 0; i < (height-fatGraphY-3-17)/2; i++ {
+		b.WriteRune('\n')
+	}
+	for _, line := range strings.Split(art, "\n") {
+		b.WriteString("                          ")
+		b.WriteString(line)
+		b.WriteRune('\n')
+	}
+	a.splash.Text = b.String()
+	a.splash.SetRect(0, fatGraphY, 80, height-3)
+	ui.Render(a.splash)
 
 	a.cmds = widgets.NewTable()
 	a.cmds.RowSeparator = false
