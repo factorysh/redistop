@@ -99,27 +99,28 @@ func (a *App) fundation(width, height int) {
 	a.ips.Title = "By IP/s"
 	a.ips.SetRect(41, fatGraphY, 80, height-3)
 
-	a.pile = NewPile(81, fatGraphY, 39)
-
-	a.keyspaces = widgets.NewTable()
-	a.pile.Add(a.keyspaces)
-	a.keyspaces.RowSeparator = false
-	a.keyspaces.Title = "Keyspace"
-	a.keyspaces.Rows = make([][]string, 2)
-
 	a.errorPanel = widgets.NewParagraph()
 	a.errorPanel.Title = "Error"
 	a.errorPanel.SetRect(0, height-3, a.myWidth, height)
 
 	if a.myWidth > 80 {
+		a.pile = NewPile(81, fatGraphY, 39)
+
+		a.keyspaces = widgets.NewTable()
+		a.pile.Add(a.keyspaces)
+		a.keyspaces.RowSeparator = false
+		a.keyspaces.Title = "Keyspace"
+		a.keyspaces.Rows = make([][]string, 2)
+
 		a.memories = widgets.NewTable()
 		a.pile.Add(a.memories)
 		a.memories.RowSeparator = false
 		a.memories.Title = "Memory"
 		a.memories.Rows = make([][]string, 4)
+
+		a.pile.ComputePosition()
 	}
 
-	a.pile.ComputePosition()
 }
 
 func (a *App) Alert(msg string) {
