@@ -62,15 +62,24 @@ func InfoLoop(redis *monitor.RedisServer, app *App, log *Logger) {
 				}
 
 				if app.myWidth > 80 {
-					app.keyspaces.Rows[0] = []string{"hits", kv["keyspace_hits"]}
-					app.keyspaces.Rows[1] = []string{"misess", kv["keyspace_misses"]}
+					app.keyspaces.Rows[0] = []string{
+						small("hits", kv["keyspace_hits"]),
+						small("misses", kv["keyspace_misses"]),
+					}
 
-					app.pubsub.Rows[0] = []string{"channels", kv["pubsub_channels"]}
-					app.pubsub.Rows[1] = []string{"patterns", kv["pubsub_patterns"]}
+					app.pubsub.Rows[0] = []string{
+						small("channels", kv["pubsub_channels"]),
+						small("patterns", kv["pubsub_patterns"]),
+					}
 
-					app.clients.Rows[0] = []string{"connected", kv["connected_clients"]}
-					app.clients.Rows[1] = []string{"blocked", kv["blocked_clients"]}
-					app.clients.Rows[2] = []string{"tracking", kv["tracking_clients"]}
+					app.clients.Rows[0] = []string{
+						small("connected", kv["connected_clients"]),
+						small("blocked", kv["blocked_clients"]),
+					}
+					app.clients.Rows[1] = []string{
+						small("tracking", kv["tracking_clients"]),
+						"",
+					}
 
 					app.persistence.Rows[0] = []string{"status", ""}
 					if kv["loading"] == "1" {
@@ -97,4 +106,8 @@ func InfoLoop(redis *monitor.RedisServer, app *App, log *Logger) {
 		}
 	}()
 
+}
+
+func small(left, right string) string {
+	return fmt.Sprintf("%s%*s", left, 18-len(left), right)
 }

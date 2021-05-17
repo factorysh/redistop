@@ -113,13 +113,13 @@ func (a *App) fundation(width, height int) {
 		a.pile.Add(a.keyspaces)
 		a.keyspaces.RowSeparator = false
 		a.keyspaces.Title = "Keyspace"
-		a.keyspaces.Rows = make([][]string, 2)
+		a.keyspaces.Rows = make([][]string, 1)
 
 		a.pubsub = widgets.NewTable()
 		a.pile.Add(a.pubsub)
 		a.pubsub.RowSeparator = false
 		a.pubsub.Title = "Pubsub"
-		a.pubsub.Rows = make([][]string, 2)
+		a.pubsub.Rows = make([][]string, 1)
 
 		a.memories = widgets.NewTable()
 		a.pile.Add(a.memories)
@@ -131,7 +131,7 @@ func (a *App) fundation(width, height int) {
 		a.pile.Add(a.clients)
 		a.clients.RowSeparator = false
 		a.clients.Title = "Clients"
-		a.clients.Rows = make([][]string, 3)
+		a.clients.Rows = make([][]string, 2)
 
 		a.persistence = widgets.NewTable()
 		a.pile.Add(a.persistence)
