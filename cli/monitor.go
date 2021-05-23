@@ -74,13 +74,15 @@ func (a *App) MonitorLoop() {
 					m = values[i]
 				}
 			}
-			a.ui.graphBox.Title = fmt.Sprintf("Commands [current: %d max: %d]", total/int(a.config.Frequency), m/int(a.config.Frequency))
+			a.ui.graphBox.Title = fmt.Sprintf("Commands [current: %.1f max: %.1f]",
+				float64(total)/float64(a.config.Frequency/time.Second),
+				float64(m)/float64(a.config.Frequency/time.Second))
 
 			size := len(s)
 			a.ui.cmds.Rows = make([][]string, size)
 			if size > 0 {
 				for i, kv := range s {
-					a.ui.cmds.Rows[size-i-1] = []string{kv.K, fmt.Sprintf("%.1f", float64(kv.V)/float64(a.config.Frequency))}
+					a.ui.cmds.Rows[size-i-1] = []string{kv.K, fmt.Sprintf("%.1f", float64(kv.V)/float64(a.config.Frequency/time.Second))}
 				}
 			}
 
@@ -88,7 +90,7 @@ func (a *App) MonitorLoop() {
 			a.ui.ips.Rows = make([][]string, size)
 			if size > 0 {
 				for i, kv := range ip {
-					a.ui.ips.Rows[size-i-1] = []string{kv.K, fmt.Sprintf("%.1f", float64(kv.V)/float64(a.config.Frequency))}
+					a.ui.ips.Rows[size-i-1] = []string{kv.K, fmt.Sprintf("%.1f", float64(kv.V)/float64(a.config.Frequency/time.Second))}
 				}
 			}
 
