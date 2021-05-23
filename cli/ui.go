@@ -34,8 +34,7 @@ func NewAppUI() *AppUI {
 	appUI := &AppUI{
 		monitorIsReady: false,
 	}
-	width, height := ui.TerminalDimensions()
-	appUI.fundation(width, height)
+	appUI.fundation()
 	appUI.WatchResize()
 	return appUI
 }
@@ -130,13 +129,8 @@ func (a *AppUI) drawSplash() {
 	ui.Render(a.splash)
 }
 
-func (a *AppUI) fundation(width, height int) {
+func (a *AppUI) fundation() {
 	a.resize()
-	if width >= 120 {
-		a.myWidth = 120
-	} else {
-		a.myWidth = 80
-	}
 
 	a.header = widgets.NewTable()
 	a.header.Rows = make([][]string, 1)
@@ -150,11 +144,7 @@ func (a *AppUI) fundation(width, height int) {
 
 	a.graph = widgets.NewSparkline()
 	a.graphBox = widgets.NewSparklineGroup(a.graph)
-	fatGraphY := 8
-	if height > 40 {
-		fatGraphY = 16
-	}
-	a.graphBox.SetRect(0, 3, a.myWidth, fatGraphY)
+	a.graphBox.SetRect(0, 3, a.myWidth, a.fatGraphY)
 
 	a.splash = widgets.NewParagraph()
 	a.drawSplash()
@@ -163,18 +153,18 @@ func (a *AppUI) fundation(width, height int) {
 	a.cmds.RowSeparator = false
 	a.cmds.Title = "By command/s"
 	a.cmds.ColumnWidths = []int{30, 10}
-	a.cmds.SetRect(0, fatGraphY, 40, height-3)
+	a.cmds.SetRect(0, a.fatGraphY, 40, a.height-3)
 
 	a.ips = widgets.NewTable()
 	a.ips.RowSeparator = false
 	a.ips.Title = "By IP/s"
-	a.ips.SetRect(41, fatGraphY, 80, height-3)
+	a.ips.SetRect(41, a.fatGraphY, 80, a.height-3)
 
 	a.errorPanel = widgets.NewParagraph()
 	a.errorPanel.Title = "Error"
-	a.errorPanel.SetRect(0, height-3, a.myWidth, height)
+	a.errorPanel.SetRect(0, a.height-3, a.myWidth, a.height)
 
-	a.pile = NewPile(81, fatGraphY, 39)
+	a.pile = NewPile(81, a.fatGraphY, 39)
 
 	a.keyspaces = widgets.NewTable()
 	a.pile.Add(a.keyspaces)
@@ -207,7 +197,6 @@ func (a *AppUI) fundation(width, height int) {
 	a.persistence.Rows = make([][]string, 3)
 
 	a.pile.ComputePosition()
-
 }
 
 func (a *AppUI) Alert(msg string) {
