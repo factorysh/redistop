@@ -76,7 +76,7 @@ func (r *RedisServer) Monitor(ctx context.Context, evt func(bool)) (chan Line, c
 					errors <- fmt.Errorf("monitor %v %v", l, err)
 					break
 				}
-				port, err := strconv.Atoi(l[4])
+				port, err := strconv.Atoi("0"+l[4])
 				if err != nil {
 					errors <- fmt.Errorf("monitor %v %v", l, err)
 					break
