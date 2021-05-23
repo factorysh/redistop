@@ -1,160 +1,83 @@
 package cli
 
 import (
-	"bytes"
-	"strings"
+	"fmt"
+	"time"
 
+	"github.com/factorysh/redistop/monitor"
 	ui "github.com/gizak/termui/v3"
-	"github.com/gizak/termui/v3/widgets"
+
+	_log "log"
 )
 
+type AppConfig struct {
+	Host      string
+	Password  string
+	Frequency time.Duration // Stats per commands and per IPs, every freq seconds
+}
+
 type App struct {
-	header      *widgets.Table
-	graph       *widgets.Sparkline
-	graphBox    *widgets.SparklineGroup
-	splash      *widgets.Paragraph
-	cmds        *widgets.Table
-	ips         *widgets.Table
-	memories    *widgets.Table
-	pile        *Pile
-	keyspaces   *widgets.Table
-	clients     *widgets.Table
-	persistence *widgets.Table
-	pubsub      *widgets.Table
-	errorPanel  *widgets.Paragraph
-	myWidth     int
+	config *AppConfig
+	redis  *monitor.RedisServer
+	log    *Logger
+	ui     *AppUI
 }
 
-func NewApp() *App {
-	app := &App{}
-	width, height := ui.TerminalDimensions()
-	app.fundation(width, height)
-	return app
+func NewApp(cfg *AppConfig) *App {
+	if cfg.Frequency == 0 {
+		cfg.Frequency = 2 * time.Second
+	}
+	return &App{
+		config: cfg,
+	}
 }
 
-const art = `
-               _._
-          _.-''__ ''-._
-     _.-''    '.  '_.  ''-._
- .-'' .-'''.  '''\/    _.,_ ''-._
-(    '      ,       .-'  | ',    )
-|'-._'-...-' __...-.''-._|'' _.-'|
-|    '-._   '._    /     _.-'    |
- '-._    '-._  '-./  _.-'    _.-'
-|'-._'-._    '-.__.-'    _.-'_.-'|
-|    '-._'-._        _.-'_.-'    |
- '-._    '-._'-.__.-'_.-'    _.-'
-|'-._'-._    '-.__.-'    _.-'_.-'|
-|    '-._'-._        _.-'_.-'    |
- '-._    '-._'-.__.-'_.-'    _.-'
-     '-._    '-.__.-'    _.-'
-         '-._        _.-'
-             '-.__.-'
-`
-
-func (a *App) fundation(width, height int) {
-	if width >= 120 {
-		a.myWidth = 120
-	} else {
-		a.myWidth = 80
+func (a *App) Serve() error {
+	_log.Printf("Connecting to redis://%s\n", a.config.Host)
+	var err error
+	a.redis, err = monitor.Redis(a.config.Host, a.config.Password)
+	if err != nil {
+		return err
 	}
 
-	a.header = widgets.NewTable()
-	a.header.Rows = make([][]string, 1)
-	if a.myWidth > 80 {
-		a.header.Rows[0] = make([]string, 6)
-	} else {
-		a.header.Rows[0] = make([]string, 4)
+	if err := ui.Init(); err != nil {
+		return fmt.Errorf("failed to initialize termui: %v", err)
 	}
-	a.header.Rows[0][0] = ""
-	a.header.SetRect(0, 0, a.myWidth, 3)
+	defer ui.Close()
 
-	a.graph = widgets.NewSparkline()
-	a.graphBox = widgets.NewSparklineGroup(a.graph)
-	fatGraphY := 8
-	if height > 40 {
-		fatGraphY = 16
-	}
-	a.graphBox.SetRect(0, 3, a.myWidth, fatGraphY)
+	a.ui = NewAppUI()
 
-	a.splash = widgets.NewParagraph()
-	b := &bytes.Buffer{}
-	for i := 0; i < (height-fatGraphY-3-17)/2; i++ {
-		b.WriteRune('\n')
-	}
-	for _, line := range strings.Split(art, "\n") {
-		b.WriteString("                          ")
-		b.WriteString(line)
-		b.WriteRune('\n')
-	}
-	a.splash.Text = b.String()
-	a.splash.SetRect(0, fatGraphY, 80, height-3)
-	ui.Render(a.splash)
-
-	a.cmds = widgets.NewTable()
-	a.cmds.RowSeparator = false
-	a.cmds.Title = "By command/s"
-	a.cmds.ColumnWidths = []int{30, 10}
-	a.cmds.SetRect(0, fatGraphY, 40, height-3)
-
-	a.ips = widgets.NewTable()
-	a.ips.RowSeparator = false
-	a.ips.Title = "By IP/s"
-	a.ips.SetRect(41, fatGraphY, 80, height-3)
-
-	a.errorPanel = widgets.NewParagraph()
-	a.errorPanel.Title = "Error"
-	a.errorPanel.SetRect(0, height-3, a.myWidth, height)
-
-	if a.myWidth > 80 {
-		a.pile = NewPile(81, fatGraphY, 39)
-
-		a.keyspaces = widgets.NewTable()
-		a.pile.Add(a.keyspaces)
-		a.keyspaces.RowSeparator = false
-		a.keyspaces.Title = "Keyspace"
-		a.keyspaces.Rows = make([][]string, 1)
-
-		a.pubsub = widgets.NewTable()
-		a.pile.Add(a.pubsub)
-		a.pubsub.RowSeparator = false
-		a.pubsub.Title = "Pubsub"
-		a.pubsub.Rows = make([][]string, 1)
-
-		a.memories = widgets.NewTable()
-		a.pile.Add(a.memories)
-		a.memories.RowSeparator = false
-		a.memories.Title = "Memory"
-		a.memories.Rows = make([][]string, 4)
-
-		a.clients = widgets.NewTable()
-		a.pile.Add(a.clients)
-		a.clients.RowSeparator = false
-		a.clients.Title = "Clients"
-		a.clients.Rows = make([][]string, 2)
-
-		a.persistence = widgets.NewTable()
-		a.pile.Add(a.persistence)
-		a.persistence.RowSeparator = false
-		a.persistence.Title = "Persistance"
-		a.persistence.Rows = make([][]string, 3)
-
-		a.pile.ComputePosition()
+	infos, err := a.redis.Info()
+	if err != nil {
+		return err
 	}
 
-}
+	a.ui.header.Title = fmt.Sprintf("Redis Top -[ v%s/%s pid: %s port: %s hz: %s uptime: %sd ]",
+		infos["redis_version"],
+		infos["multiplexing_api"],
+		infos["process_id"],
+		infos["tcp_port"],
+		infos["hz"],
+		infos["uptime_in_days"],
+	)
+	ui.Render(a.ui.header)
+	ui.Render(a.ui.graphBox)
+	ui.Render(a.ui.errorPanel)
 
-func (a *App) Alert(msg string) {
-	argh := widgets.NewParagraph()
-	argh.SetRect(20, 6, a.myWidth-20, 11)
-	buff := &bytes.Buffer{}
-	buff.WriteRune('\n')
-	for i := 0; i < (a.myWidth-40-len(msg))/2; i++ {
-		buff.WriteRune(' ')
+	a.log = &Logger{
+		block: a.ui.errorPanel,
 	}
-	buff.WriteString(msg)
-	argh.Text = buff.String()
-	argh.TextStyle.Fg = ui.ColorRed
-	argh.Block.BorderStyle.Fg = ui.ColorRed
-	ui.Render(argh)
+
+	a.MonitorLoop()
+	a.InfoLoop()
+	if a.ui.myWidth > 80 {
+		a.MemoryLoop()
+	}
+
+	for e := range ui.PollEvents() {
+		if e.Type == ui.KeyboardEvent {
+			break
+		}
+	}
+	return nil
 }

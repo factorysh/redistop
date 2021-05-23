@@ -1,41 +1,67 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"github.com/factorysh/redistop/cli"
 	"github.com/factorysh/redistop/version"
 )
 
 func main() {
-	if len(os.Args) > 1 {
-		if os.Args[1] == "-h" || os.Args[1] == "--help" {
-			fmt.Printf(`RedisTop %s
+	fFlag := flag.Duration("f", 2*time.Second, "Frequency")
+	hFlag := flag.Bool("h", false, "Help")
+	vFlag := flag.Bool("V", false, "Version")
+	flag.Parse()
+
+	if *hFlag {
+		fmt.Printf(`RedisTop %s
 top for Redis, group by command and client IP
 
 Usage:
   redistop [[localhost:6379] password]
+Options:
+  -f 2s : Refresh frequency
+  -h : Help
+  -V : Version
 
 You can set REDISTOP_PASSWORD
 `, version.Version())
-			return
-		}
+		return
 	}
+	if *vFlag {
+		fmt.Println(version.Version())
+		return
+	}
+
 	host := "localhost:6379"
-	if len(os.Args) > 1 {
-		host = os.Args[1]
+	args := flag.Args()
+	if len(args) > 1 {
+		host = args[1]
 	}
 	var password string
-	if len(os.Args) > 2 {
-		password = os.Args[2]
+	if len(args) > 2 {
+		password = args[2]
 	}
 	p := os.Getenv("REDISTOP_PASSWORD")
 	if p != "" {
 		password = p
 	}
 
-	log.Fatal(cli.Top(host, password))
+	app := cli.NewApp(&cli.AppConfig{
+		Host:      host,
+		Password:  password,
+		Frequency: *fFlag,
+	})
+
+	err := app.Serve()
+	if err != nil {
+		log.Fatal(err)
+	} else {
+		log.Println("Bye")
+	}
 
 }
