@@ -61,41 +61,41 @@ func (a *App) InfoLoop() {
 					}
 				}
 
-				if a.ui.myWidth > 80 {
-					a.ui.keyspaces.Rows[0] = []string{
-						small("hits", kv["keyspace_hits"]),
-						small("misses", kv["keyspace_misses"]),
-					}
+				a.ui.keyspaces.Rows[0] = []string{
+					small("hits", kv["keyspace_hits"]),
+					small("misses", kv["keyspace_misses"]),
+				}
 
-					a.ui.pubsub.Rows[0] = []string{
-						small("channels", kv["pubsub_channels"]),
-						small("patterns", kv["pubsub_patterns"]),
-					}
+				a.ui.pubsub.Rows[0] = []string{
+					small("channels", kv["pubsub_channels"]),
+					small("patterns", kv["pubsub_patterns"]),
+				}
 
-					a.ui.clients.Rows[0] = []string{
-						small("connected", kv["connected_clients"]),
-						small("blocked", kv["blocked_clients"]),
-					}
-					a.ui.clients.Rows[1] = []string{
-						small("tracking", kv["tracking_clients"]),
-						"",
-					}
+				a.ui.clients.Rows[0] = []string{
+					small("connected", kv["connected_clients"]),
+					small("blocked", kv["blocked_clients"]),
+				}
+				a.ui.clients.Rows[1] = []string{
+					small("tracking", kv["tracking_clients"]),
+					"",
+				}
 
-					a.ui.persistence.Rows[0] = []string{"status", ""}
-					if kv["loading"] == "1" {
-						a.ui.persistence.Rows[0][1] = "loading"
+				a.ui.persistence.Rows[0] = []string{"status", ""}
+				if kv["loading"] == "1" {
+					a.ui.persistence.Rows[0][1] = "loading"
+				} else {
+					if kv["rdb_bgsave_in_progress"] == "1" {
+						a.ui.persistence.Rows[0][1] = "rdb_bgsave_in_progress"
 					} else {
-						if kv["rdb_bgsave_in_progress"] == "1" {
-							a.ui.persistence.Rows[0][1] = "rdb_bgsave_in_progress"
-						} else {
-							if kv["aof_rewrite_in_progress"] == "1" {
-								a.ui.persistence.Rows[0][1] = "aof_rewrite_in_progress"
-							}
+						if kv["aof_rewrite_in_progress"] == "1" {
+							a.ui.persistence.Rows[0][1] = "aof_rewrite_in_progress"
 						}
 					}
-					a.ui.persistence.Rows[1] = []string{"rdb_changes_since_last_save", kv["rdb_changes_since_last_save"]}
-					a.ui.persistence.Rows[2] = []string{"rdb_last_save_time", kv["rdb_last_save_time"]}
+				}
+				a.ui.persistence.Rows[1] = []string{"rdb_changes_since_last_save", kv["rdb_changes_since_last_save"]}
+				a.ui.persistence.Rows[2] = []string{"rdb_last_save_time", kv["rdb_last_save_time"]}
 
+				if a.ui.myWidth > 80 {
 					ui.Render(a.ui.keyspaces, a.ui.pubsub, a.ui.clients, a.ui.persistence)
 				}
 			}

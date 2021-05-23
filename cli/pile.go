@@ -1,6 +1,7 @@
 package cli
 
 import (
+	ui "github.com/gizak/termui/v3"
 	"github.com/gizak/termui/v3/widgets"
 )
 
@@ -31,4 +32,19 @@ func (p *Pile) ComputePosition() {
 
 func (p *Pile) Add(table *widgets.Table) {
 	p.tables = append(p.tables, table)
+}
+
+func (p *Pile) Render() {
+	for _, table := range p.tables {
+		if len(table.Rows) == 0 {
+			continue
+		}
+		empty := false
+		for _, row := range table.Rows {
+			empty = empty || len(row) == 0
+		}
+		if !empty {
+			ui.Render(table)
+		}
+	}
 }

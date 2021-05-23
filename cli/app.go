@@ -70,9 +70,7 @@ func (a *App) Serve() error {
 
 	a.MonitorLoop()
 	a.InfoLoop()
-	if a.ui.myWidth > 80 {
-		a.MemoryLoop()
-	}
+	a.MemoryLoop()
 
 	for e := range ui.PollEvents() {
 		if e.Type == ui.KeyboardEvent {
