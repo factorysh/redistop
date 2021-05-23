@@ -8,11 +8,6 @@ import (
 	"github.com/gizak/termui/v3/widgets"
 )
 
-type AppConfig struct {
-	Host     string
-	Password string
-}
-
 type AppUI struct {
 	header      *widgets.Table
 	graph       *widgets.Sparkline

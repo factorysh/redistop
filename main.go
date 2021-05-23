@@ -36,6 +36,16 @@ You can set REDISTOP_PASSWORD
 		password = p
 	}
 
-	log.Fatal(cli.Top(host, password))
+	app := cli.NewApp(&cli.AppConfig{
+		Host:     host,
+		Password: password,
+	})
+
+	err := app.Serve()
+	if err != nil {
+		log.Fatal(err)
+	} else {
+		log.Println("Bye")
+	}
 
 }
