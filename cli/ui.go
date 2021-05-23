@@ -23,6 +23,9 @@ type AppUI struct {
 	pubsub      *widgets.Table
 	errorPanel  *widgets.Paragraph
 	myWidth     int
+	fatGraphY   int
+	width       int
+	height      int
 }
 
 func NewAppUI() *AppUI {
@@ -52,7 +55,36 @@ const art = `
              '-.__.-'
 `
 
+func (a *AppUI) resize() {
+	a.width, a.height = ui.TerminalDimensions()
+	if a.width >= 120 {
+		a.myWidth = 120
+	} else {
+		a.myWidth = 80
+	}
+	a.fatGraphY = 8
+	if a.height > 40 {
+		a.fatGraphY = 16
+	}
+}
+
+func (a *AppUI) drawSplash() {
+	b := &bytes.Buffer{}
+	for i := 0; i < (a.height-a.fatGraphY-3-17)/2; i++ {
+		b.WriteRune('\n')
+	}
+	for _, line := range strings.Split(art, "\n") {
+		b.WriteString("                          ")
+		b.WriteString(line)
+		b.WriteRune('\n')
+	}
+	a.splash.Text = b.String()
+	a.splash.SetRect(0, a.fatGraphY, 80, a.height-3)
+	ui.Render(a.splash)
+}
+
 func (a *AppUI) fundation(width, height int) {
+	a.resize()
 	if width >= 120 {
 		a.myWidth = 120
 	} else {
@@ -78,18 +110,7 @@ func (a *AppUI) fundation(width, height int) {
 	a.graphBox.SetRect(0, 3, a.myWidth, fatGraphY)
 
 	a.splash = widgets.NewParagraph()
-	b := &bytes.Buffer{}
-	for i := 0; i < (height-fatGraphY-3-17)/2; i++ {
-		b.WriteRune('\n')
-	}
-	for _, line := range strings.Split(art, "\n") {
-		b.WriteString("                          ")
-		b.WriteString(line)
-		b.WriteRune('\n')
-	}
-	a.splash.Text = b.String()
-	a.splash.SetRect(0, fatGraphY, 80, height-3)
-	ui.Render(a.splash)
+	a.drawSplash()
 
 	a.cmds = widgets.NewTable()
 	a.cmds.RowSeparator = false
