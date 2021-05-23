@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"runtime/pprof"
 	"time"
 
 	"github.com/factorysh/redistop/cli"
@@ -15,7 +16,18 @@ func main() {
 	fFlag := flag.Duration("f", 2*time.Second, "Frequency")
 	hFlag := flag.Bool("h", false, "Help")
 	vFlag := flag.Bool("V", false, "Version")
+	cpuprofile := flag.String("cpuprofile", "", "write cpu profile to file")
+
 	flag.Parse()
+
+	if *cpuprofile != "" {
+		f, err := os.Create(*cpuprofile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		pprof.StartCPUProfile(f)
+		defer pprof.StopCPUProfile()
+	}
 
 	if *hFlag {
 		fmt.Printf(`RedisTop %s
