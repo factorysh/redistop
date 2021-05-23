@@ -14,8 +14,10 @@ func (a *App) MemoryLoop() {
 			if err != nil {
 				a.log.Printf("Memory Error : %s", err.Error())
 			} else {
-				a.ui.header.Rows[0][4] = fmt.Sprintf("keys: %d", m.KeysCount)
-				a.ui.header.Rows[0][5] = fmt.Sprintf("mem: %s", DisplayUnit(float64(m.PeakAllocated)))
+				if len(a.ui.header.Rows[0]) > 4 {
+					a.ui.header.Rows[0][4] = fmt.Sprintf("keys: %d", m.KeysCount)
+					a.ui.header.Rows[0][5] = fmt.Sprintf("mem: %s", DisplayUnit(float64(m.PeakAllocated)))
+				}
 				a.ui.memories.Rows = m.Table()
 			}
 			kv, err := a.redis.Info()
@@ -25,8 +27,10 @@ func (a *App) MemoryLoop() {
 				a.ui.memories.Title = fmt.Sprintf("Memory [ %s ]", kv["maxmemory_policy"])
 			}
 
-			if len(a.ui.memories.Rows) > 0 && len(a.ui.memories.Rows[0]) > 0 {
-				ui.Render(a.ui.memories)
+			if a.ui.myWidth > 80 {
+				if len(a.ui.memories.Rows) > 0 && len(a.ui.memories.Rows[0]) > 0 {
+					ui.Render(a.ui.memories)
+				}
 			}
 			time.Sleep(5 * time.Second)
 		}

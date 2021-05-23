@@ -89,7 +89,7 @@ func (a *AppUI) draw() {
 	a.ips.SetRect(41, a.fatGraphY, 80, a.height-3)
 
 	blank := ui.NewBlock()
-	blank.SetRect(80, a.fatGraphY, 120, a.height-3)
+	blank.SetRect(80, 0, 120, a.height)
 	blank.Border = false
 	ui.Render(blank)
 
