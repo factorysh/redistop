@@ -75,6 +75,12 @@ func (a *AppUI) resize() {
 func (a *AppUI) draw() {
 	a.resize()
 
+	if a.myWidth > 80 && len(a.header.Rows[0]) == 4 {
+		a.header.Rows[0] = make([]string, 6)
+	}
+	if a.myWidth == 80 && len(a.header.Rows[0]) == 6 {
+		a.header.Rows[0] = make([]string, 4)
+	}
 	a.header.SetRect(0, 0, a.myWidth, 3)
 
 	a.graphBox.SetRect(0, 3, a.myWidth, a.fatGraphY)
