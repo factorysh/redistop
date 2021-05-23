@@ -74,6 +74,9 @@ func (a *AppUI) resize() {
 
 func (a *AppUI) draw() {
 	a.resize()
+
+	a.header.SetRect(0, 0, a.myWidth, 3)
+
 	a.graphBox.SetRect(0, 3, a.myWidth, a.fatGraphY)
 	if !a.monitorIsReady {
 		a.drawSplash()
@@ -130,7 +133,6 @@ func (a *AppUI) drawSplash() {
 }
 
 func (a *AppUI) fundation() {
-	a.resize()
 
 	a.header = widgets.NewTable()
 	a.header.Rows = make([][]string, 1)
@@ -140,29 +142,23 @@ func (a *AppUI) fundation() {
 		a.header.Rows[0] = make([]string, 4)
 	}
 	a.header.Rows[0][0] = ""
-	a.header.SetRect(0, 0, a.myWidth, 3)
 
 	a.graph = widgets.NewSparkline()
 	a.graphBox = widgets.NewSparklineGroup(a.graph)
-	a.graphBox.SetRect(0, 3, a.myWidth, a.fatGraphY)
 
 	a.splash = widgets.NewParagraph()
-	a.drawSplash()
 
 	a.cmds = widgets.NewTable()
 	a.cmds.RowSeparator = false
 	a.cmds.Title = "By command/s"
 	a.cmds.ColumnWidths = []int{30, 10}
-	a.cmds.SetRect(0, a.fatGraphY, 40, a.height-3)
 
 	a.ips = widgets.NewTable()
 	a.ips.RowSeparator = false
 	a.ips.Title = "By IP/s"
-	a.ips.SetRect(41, a.fatGraphY, 80, a.height-3)
 
 	a.errorPanel = widgets.NewParagraph()
 	a.errorPanel.Title = "Error"
-	a.errorPanel.SetRect(0, a.height-3, a.myWidth, a.height)
 
 	a.pile = NewPile(81, a.fatGraphY, 39)
 
