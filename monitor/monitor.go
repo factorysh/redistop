@@ -21,7 +21,7 @@ type Line struct {
 
 func (r *RedisServer) Monitor(ctx context.Context, evt func(bool)) (chan Line, chan error) {
 	// +1619454979.381488 [1 172.29.1.2:57676] "brpop"
-	line := regexp.MustCompile(`^\+(\d+\.\d+) \[(\d+) ([\d.]+):(\d+)] "(.*?)"`)
+	line := regexp.MustCompile(`^\+(\d+\.\d+) \[(\d+) ([\d\.]+|\[[0-9a-f\:]+\]|lua):?(\d+)?\] "(.*?)"`)
 
 	lines := make(chan Line)
 	errors := make(chan error)
