@@ -41,7 +41,8 @@ func (a *App) MonitorLoop() {
 	}()
 
 	go func() {
-		values := circular.NewCircular(118, float64(a.config.Frequency/time.Second))
+		scale := float64(a.config.Frequency) / float64(time.Second)
+		values := circular.NewCircular(118, scale)
 		for {
 			time.Sleep(a.config.Frequency)
 			a.ui.monitorIsReady = true
@@ -72,7 +73,7 @@ func (a *App) MonitorLoop() {
 			a.ui.cmds.Rows = make([][]string, size)
 			if size > 0 {
 				for i, kv := range s {
-					a.ui.cmds.Rows[size-i-1] = []string{kv.K, fmt.Sprintf("%.1f", float64(kv.V)/float64(a.config.Frequency/time.Second))}
+					a.ui.cmds.Rows[size-i-1] = []string{kv.K, fmt.Sprintf("%.1f", float64(kv.V)/scale)}
 				}
 			}
 
@@ -80,7 +81,7 @@ func (a *App) MonitorLoop() {
 			a.ui.ips.Rows = make([][]string, size)
 			if size > 0 {
 				for i, kv := range ip {
-					a.ui.ips.Rows[size-i-1] = []string{kv.K, fmt.Sprintf("%.1f", float64(kv.V)/float64(a.config.Frequency/time.Second))}
+					a.ui.ips.Rows[size-i-1] = []string{kv.K, fmt.Sprintf("%.1f", float64(kv.V)/scale)}
 				}
 			}
 
