@@ -11,7 +11,7 @@ import (
 	ui "github.com/gizak/termui/v3"
 )
 
-func MonitorLoop(redis *monitor.RedisServer, app *App, log *Logger) {
+func MonitorLoop(redis *monitor.RedisServer, app *AppUI, log *Logger) {
 
 	statz := stats.New()
 	lock := sync.Mutex{}

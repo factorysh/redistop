@@ -22,7 +22,7 @@ func Top(host, password string) error {
 	}
 	defer ui.Close()
 
-	app := NewApp()
+	app := NewAppUI()
 
 	infos, err := redis.Info()
 	if err != nil {

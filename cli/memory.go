@@ -8,7 +8,7 @@ import (
 	ui "github.com/gizak/termui/v3"
 )
 
-func MemoryLoop(redis *monitor.RedisServer, app *App, log *Logger) {
+func MemoryLoop(redis *monitor.RedisServer, app *AppUI, log *Logger) {
 	go func() {
 		for {
 			m, err := redis.Memory()

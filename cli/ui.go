@@ -8,7 +8,12 @@ import (
 	"github.com/gizak/termui/v3/widgets"
 )
 
-type App struct {
+type AppConfig struct {
+	Host     string
+	Password string
+}
+
+type AppUI struct {
 	header      *widgets.Table
 	graph       *widgets.Sparkline
 	graphBox    *widgets.SparklineGroup
@@ -25,8 +30,8 @@ type App struct {
 	myWidth     int
 }
 
-func NewApp() *App {
-	app := &App{}
+func NewAppUI() *AppUI {
+	app := &AppUI{}
 	width, height := ui.TerminalDimensions()
 	app.fundation(width, height)
 	return app
@@ -52,7 +57,7 @@ const art = `
              '-.__.-'
 `
 
-func (a *App) fundation(width, height int) {
+func (a *AppUI) fundation(width, height int) {
 	if width >= 120 {
 		a.myWidth = 120
 	} else {
@@ -144,7 +149,7 @@ func (a *App) fundation(width, height int) {
 
 }
 
-func (a *App) Alert(msg string) {
+func (a *AppUI) Alert(msg string) {
 	argh := widgets.NewParagraph()
 	argh.SetRect(20, 6, a.myWidth-20, 11)
 	buff := &bytes.Buffer{}

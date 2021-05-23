@@ -9,7 +9,7 @@ import (
 	ui "github.com/gizak/termui/v3"
 )
 
-func InfoLoop(redis *monitor.RedisServer, app *App, log *Logger) {
+func InfoLoop(redis *monitor.RedisServer, app *AppUI, log *Logger) {
 
 	go func() {
 		var cpu *monitor.CPU
