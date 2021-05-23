@@ -45,6 +45,7 @@ func (a *App) MonitorLoop() {
 		values := make([]int, maxValues)
 		for {
 			time.Sleep(a.config.Frequency)
+			a.ui.monitorIsReady = true
 
 			a.ui.splash.Text = ""
 			a.ui.splash.Border = false

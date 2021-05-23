@@ -3,36 +3,41 @@ package cli
 import (
 	"bytes"
 	"strings"
+	"time"
 
 	ui "github.com/gizak/termui/v3"
 	"github.com/gizak/termui/v3/widgets"
 )
 
 type AppUI struct {
-	header      *widgets.Table
-	graph       *widgets.Sparkline
-	graphBox    *widgets.SparklineGroup
-	splash      *widgets.Paragraph
-	cmds        *widgets.Table
-	ips         *widgets.Table
-	memories    *widgets.Table
-	pile        *Pile
-	keyspaces   *widgets.Table
-	clients     *widgets.Table
-	persistence *widgets.Table
-	pubsub      *widgets.Table
-	errorPanel  *widgets.Paragraph
-	myWidth     int
-	fatGraphY   int
-	width       int
-	height      int
+	header         *widgets.Table
+	graph          *widgets.Sparkline
+	graphBox       *widgets.SparklineGroup
+	splash         *widgets.Paragraph
+	cmds           *widgets.Table
+	ips            *widgets.Table
+	memories       *widgets.Table
+	pile           *Pile
+	keyspaces      *widgets.Table
+	clients        *widgets.Table
+	persistence    *widgets.Table
+	pubsub         *widgets.Table
+	errorPanel     *widgets.Paragraph
+	myWidth        int
+	fatGraphY      int
+	width          int
+	height         int
+	monitorIsReady bool
 }
 
 func NewAppUI() *AppUI {
-	app := &AppUI{}
+	appUI := &AppUI{
+		monitorIsReady: false,
+	}
 	width, height := ui.TerminalDimensions()
-	app.fundation(width, height)
-	return app
+	appUI.fundation(width, height)
+	appUI.WatchResize()
+	return appUI
 }
 
 const art = `
@@ -66,6 +71,48 @@ func (a *AppUI) resize() {
 	if a.height > 40 {
 		a.fatGraphY = 16
 	}
+}
+
+func (a *AppUI) draw() {
+	a.resize()
+	a.graphBox.SetRect(0, 3, a.myWidth, a.fatGraphY)
+	if !a.monitorIsReady {
+		a.drawSplash()
+	} else {
+		blank := ui.NewBlock()
+		blank.SetRect(0, a.fatGraphY, 80, a.height-3)
+		blank.Border = false
+		ui.Render(blank)
+	}
+
+	a.cmds.SetRect(0, a.fatGraphY, 40, a.height-3)
+	a.ips.SetRect(41, a.fatGraphY, 80, a.height-3)
+
+	blank := ui.NewBlock()
+	blank.SetRect(80, a.fatGraphY, 120, a.height-3)
+	blank.Border = false
+	ui.Render(blank)
+
+	a.pile.y = a.fatGraphY
+	a.pile.ComputePosition()
+	if a.myWidth > 80 {
+		a.pile.Render()
+	}
+
+	a.errorPanel.SetRect(0, a.height-3, a.myWidth, a.height)
+	ui.Render(a.errorPanel)
+}
+
+func (a *AppUI) WatchResize() {
+	go func() {
+		for {
+			width, height := ui.TerminalDimensions()
+			if a.width != width || a.height != height {
+				a.draw()
+			}
+			time.Sleep(time.Second)
+		}
+	}()
 }
 
 func (a *AppUI) drawSplash() {
@@ -127,41 +174,39 @@ func (a *AppUI) fundation(width, height int) {
 	a.errorPanel.Title = "Error"
 	a.errorPanel.SetRect(0, height-3, a.myWidth, height)
 
-	if a.myWidth > 80 {
-		a.pile = NewPile(81, fatGraphY, 39)
+	a.pile = NewPile(81, fatGraphY, 39)
 
-		a.keyspaces = widgets.NewTable()
-		a.pile.Add(a.keyspaces)
-		a.keyspaces.RowSeparator = false
-		a.keyspaces.Title = "Keyspace"
-		a.keyspaces.Rows = make([][]string, 1)
+	a.keyspaces = widgets.NewTable()
+	a.pile.Add(a.keyspaces)
+	a.keyspaces.RowSeparator = false
+	a.keyspaces.Title = "Keyspace"
+	a.keyspaces.Rows = make([][]string, 1)
 
-		a.pubsub = widgets.NewTable()
-		a.pile.Add(a.pubsub)
-		a.pubsub.RowSeparator = false
-		a.pubsub.Title = "Pubsub"
-		a.pubsub.Rows = make([][]string, 1)
+	a.pubsub = widgets.NewTable()
+	a.pile.Add(a.pubsub)
+	a.pubsub.RowSeparator = false
+	a.pubsub.Title = "Pubsub"
+	a.pubsub.Rows = make([][]string, 1)
 
-		a.memories = widgets.NewTable()
-		a.pile.Add(a.memories)
-		a.memories.RowSeparator = false
-		a.memories.Title = "Memory"
-		a.memories.Rows = make([][]string, 4)
+	a.memories = widgets.NewTable()
+	a.pile.Add(a.memories)
+	a.memories.RowSeparator = false
+	a.memories.Title = "Memory"
+	a.memories.Rows = make([][]string, 4)
 
-		a.clients = widgets.NewTable()
-		a.pile.Add(a.clients)
-		a.clients.RowSeparator = false
-		a.clients.Title = "Clients"
-		a.clients.Rows = make([][]string, 2)
+	a.clients = widgets.NewTable()
+	a.pile.Add(a.clients)
+	a.clients.RowSeparator = false
+	a.clients.Title = "Clients"
+	a.clients.Rows = make([][]string, 2)
 
-		a.persistence = widgets.NewTable()
-		a.pile.Add(a.persistence)
-		a.persistence.RowSeparator = false
-		a.persistence.Title = "Persistance"
-		a.persistence.Rows = make([][]string, 3)
+	a.persistence = widgets.NewTable()
+	a.pile.Add(a.persistence)
+	a.persistence.RowSeparator = false
+	a.persistence.Title = "Persistance"
+	a.persistence.Rows = make([][]string, 3)
 
-		a.pile.ComputePosition()
-	}
+	a.pile.ComputePosition()
 
 }
 
