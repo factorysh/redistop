@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/factorysh/redistop/circular"
 	"github.com/factorysh/redistop/stats"
 	ui "github.com/gizak/termui/v3"
 )
@@ -40,9 +41,7 @@ func (a *App) MonitorLoop() {
 	}()
 
 	go func() {
-		poz := 0
-		maxValues := a.ui.myWidth - 2
-		values := make([]int, maxValues)
+		values := circular.NewCircular(118, float64(a.config.Frequency/time.Second))
 		for {
 			time.Sleep(a.config.Frequency)
 			a.ui.monitorIsReady = true
@@ -54,31 +53,21 @@ func (a *App) MonitorLoop() {
 			ip := stats.Count(statz.Ips)
 			statz.Reset()
 			lock.Unlock()
-			total := 0
 			for _, i := range s {
-				total += i.V
+				values.Add(i.V)
 			}
-			values[poz] = total
-			poz++
-			if poz >= maxValues {
-				poz = 0
-			}
-			a.ui.graph.Data = make([]float64, maxValues)
-			m := 0
-			for i := 0; i < maxValues; i++ {
-				j := i + poz
-				if j >= maxValues {
-					j -= maxValues
-				}
-				a.ui.graph.Data[i] = float64(values[j])
-				if values[i] > m {
-					m = values[i]
+			a.ui.graph.Data = values.LastValues(a.ui.myWidth - 2)
+			var m float64 = 0
+			for _, v := range a.ui.graph.Data {
+				if v > m {
+					m = v
 				}
 			}
+			values.Next()
 			a.ui.graphBox.Title = fmt.Sprintf("Commands [current: %.1f max: %.1f]",
-				float64(total)/float64(a.config.Frequency/time.Second),
-				float64(m)/float64(a.config.Frequency/time.Second))
-
+				a.ui.graph.Data[len(a.ui.graph.Data)-1],
+				m,
+			)
 			size := len(s)
 			a.ui.cmds.Rows = make([][]string, size)
 			if size > 0 {

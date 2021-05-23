@@ -24,3 +24,7 @@ docker-build:
 		-w /src/bin \
 		bearstech/upx \
 		upx redistop
+
+test:
+	go test -cover \
+		github.com/factorysh/redistop/circular
