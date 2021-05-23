@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/factorysh/redistop/monitor"
 	ui "github.com/gizak/termui/v3"
@@ -10,16 +11,22 @@ import (
 )
 
 type AppConfig struct {
-	Host     string
-	Password string
+	Host      string
+	Password  string
+	Frequency time.Duration // Stats per commands and per IPs, every freq seconds
 }
 
 type App struct {
 	config *AppConfig
 	redis  *monitor.RedisServer
+	log    *Logger
+	ui     *AppUI
 }
 
 func NewApp(cfg *AppConfig) *App {
+	if cfg.Frequency == 0 {
+		cfg.Frequency = 2 * time.Second
+	}
 	return &App{
 		config: cfg,
 	}
@@ -38,14 +45,14 @@ func (a *App) Serve() error {
 	}
 	defer ui.Close()
 
-	appUI := NewAppUI()
+	a.ui = NewAppUI()
 
 	infos, err := a.redis.Info()
 	if err != nil {
 		return err
 	}
 
-	appUI.header.Title = fmt.Sprintf("Redis Top -[ v%s/%s pid: %s port: %s hz: %s uptime: %sd ]",
+	a.ui.header.Title = fmt.Sprintf("Redis Top -[ v%s/%s pid: %s port: %s hz: %s uptime: %sd ]",
 		infos["redis_version"],
 		infos["multiplexing_api"],
 		infos["process_id"],
@@ -53,18 +60,18 @@ func (a *App) Serve() error {
 		infos["hz"],
 		infos["uptime_in_days"],
 	)
-	ui.Render(appUI.header)
-	ui.Render(appUI.graphBox)
-	ui.Render(appUI.errorPanel)
+	ui.Render(a.ui.header)
+	ui.Render(a.ui.graphBox)
+	ui.Render(a.ui.errorPanel)
 
-	log := &Logger{
-		block: appUI.errorPanel,
+	a.log = &Logger{
+		block: a.ui.errorPanel,
 	}
 
-	MonitorLoop(a.redis, appUI, log)
-	InfoLoop(a.redis, appUI, log)
-	if appUI.myWidth > 80 {
-		MemoryLoop(a.redis, appUI, log)
+	a.MonitorLoop()
+	a.InfoLoop()
+	if a.ui.myWidth > 80 {
+		a.MemoryLoop()
 	}
 
 	for e := range ui.PollEvents() {
