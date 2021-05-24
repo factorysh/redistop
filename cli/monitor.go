@@ -9,6 +9,7 @@ import (
 
 	"github.com/factorysh/redistop/circular"
 	"github.com/factorysh/redistop/stats"
+	"github.com/gdamore/tcell/v2"
 	"github.com/guptarohit/asciigraph"
 	"github.com/rivo/tview"
 )
@@ -82,7 +83,8 @@ func (a *App) MonitorLoop() {
 				size := len(s)
 				if size > 0 {
 					for i, kv := range s {
-						a.ui.cmds.SetCellSimple(size-i-1, 0, kv.K)
+						a.ui.cmds.SetCell(size-i-1, 0,
+							tview.NewTableCell(kv.K).SetAttributes(tcell.AttrBold))
 						a.ui.cmds.SetCell(size-i-1, 1,
 							tview.NewTableCell(fmt.Sprintf("%.1f", float64(kv.V)/scale)).
 								SetAlign(tview.AlignRight))
@@ -93,7 +95,8 @@ func (a *App) MonitorLoop() {
 				size = len(ip)
 				if size > 0 {
 					for i, kv := range ip {
-						a.ui.ips.SetCellSimple(size-i-1, 0, kv.K)
+						a.ui.ips.SetCell(size-i-1, 0,
+							tview.NewTableCell(kv.K).SetAttributes(tcell.AttrItalic))
 						a.ui.ips.SetCellSimple(size-i-1, 1, fmt.Sprintf("%.1f", float64(kv.V)/scale))
 					}
 				}
