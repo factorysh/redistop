@@ -47,5 +47,8 @@ func (c *Circular) Values() []float64 {
 }
 
 func (c *Circular) LastValues(size int) []float64 {
+	if size >= len(c.points) {
+		return c.Values()
+	}
 	return c.Values()[len(c.points)-size:]
 }
