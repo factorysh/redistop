@@ -10,6 +10,7 @@ import (
 	"github.com/factorysh/redistop/circular"
 	"github.com/factorysh/redistop/stats"
 	"github.com/guptarohit/asciigraph"
+	"github.com/rivo/tview"
 )
 
 func (a *App) MonitorLoop() {
@@ -77,19 +78,23 @@ func (a *App) MonitorLoop() {
 					vv[len(vv)-1],
 					m,
 				))
+				a.ui.cmds.Clear()
 				size := len(s)
-				a.ui.cmds.Rows = make([][]string, size)
 				if size > 0 {
 					for i, kv := range s {
-						a.ui.cmds.Rows[size-i-1] = []string{kv.K, fmt.Sprintf("%.1f", float64(kv.V)/scale)}
+						a.ui.cmds.SetCellSimple(size-i-1, 0, kv.K)
+						a.ui.cmds.SetCell(size-i-1, 1,
+							tview.NewTableCell(fmt.Sprintf("%.1f", float64(kv.V)/scale)).
+								SetAlign(tview.AlignRight))
 					}
 				}
 
+				a.ui.ips.Clear()
 				size = len(ip)
-				a.ui.ips.Rows = make([][]string, size)
 				if size > 0 {
 					for i, kv := range ip {
-						a.ui.ips.Rows[size-i-1] = []string{kv.K, fmt.Sprintf("%.1f", float64(kv.V)/scale)}
+						a.ui.ips.SetCellSimple(size-i-1, 0, kv.K)
+						a.ui.ips.SetCellSimple(size-i-1, 1, fmt.Sprintf("%.1f", float64(kv.V)/scale))
 					}
 				}
 			})

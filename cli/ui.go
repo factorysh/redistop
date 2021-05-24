@@ -16,8 +16,8 @@ type AppUI struct {
 	header         *tview.Table
 	graph          *tview.TextView
 	splash         *widgets.Paragraph
-	cmds           *widgets.Table
-	ips            *widgets.Table
+	cmds           *tview.Table
+	ips            *tview.Table
 	memories       *widgets.Table
 	pile           *Pile
 	keyspaces      *widgets.Table
@@ -137,27 +137,30 @@ func (a *AppUI) drawSplash() {
 func (a *AppUI) fundation() {
 	a.header = tview.NewTable().SetFixed(1, 4)
 	a.header.SetBorder(true)
+	a.header.SetTitle("Redistop")
 	for i := 0; i < 4; i++ {
 		a.header.SetCell(0, i, tview.NewTableCell("*"))
 	}
 	a.graph = tview.NewTextView()
 	a.graph.SetBorder(true)
-	grid := tview.NewGrid().SetRows(3, 0, 3).SetColumns(0, 30, 30).
-		AddItem(a.header, 0, 0, 1, 3, 0, 0, false).
-		AddItem(a.graph, 1, 0, 1, 3, 0, 0, false)
-	a.header.SetTitle("Redistop")
-	a.app.SetRoot(grid, true).SetFocus(grid)
 
 	a.splash = widgets.NewParagraph()
 
-	a.cmds = widgets.NewTable()
-	a.cmds.RowSeparator = false
-	a.cmds.Title = "By command/s"
-	a.cmds.ColumnWidths = []int{30, 10}
+	a.cmds = tview.NewTable()
+	a.cmds.SetBorder(true)
+	a.cmds.SetTitle("By command/s")
 
-	a.ips = widgets.NewTable()
-	a.ips.RowSeparator = false
-	a.ips.Title = "By IP/s"
+	a.ips = tview.NewTable()
+	a.ips.SetBorder(true)
+	a.ips.SetTitle("By IP/s")
+
+	grid := tview.NewGrid().SetRows(3, 7, 0).SetColumns(0, 30, 30).
+		AddItem(a.header, 0, 0, 1, 3, 0, 0, false).
+		AddItem(a.graph, 1, 0, 1, 3, 0, 0, false).
+		AddItem(a.cmds, 2, 0, 1, 1, 0, 0, false).
+		AddItem(a.ips, 2, 1, 1, 1, 0, 0, false)
+
+	a.app.SetRoot(grid, true).SetFocus(grid)
 
 	a.errorPanel = widgets.NewParagraph()
 	a.errorPanel.Title = "Error"
