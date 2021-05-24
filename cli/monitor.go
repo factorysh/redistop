@@ -9,7 +9,7 @@ import (
 
 	"github.com/factorysh/redistop/circular"
 	"github.com/factorysh/redistop/stats"
-	ui "github.com/gizak/termui/v3"
+	"github.com/guptarohit/asciigraph"
 )
 
 func (a *App) MonitorLoop() {
@@ -19,7 +19,9 @@ func (a *App) MonitorLoop() {
 
 	lines, monitorErrors := a.redis.Monitor(context.TODO(), func(ok bool) {
 		if ok {
-			ui.Render(a.ui.graphBox)
+			a.ui.app.QueueUpdate(func() {
+
+			})
 		} else {
 			a.ui.Alert("Not connected")
 		}
@@ -57,37 +59,41 @@ func (a *App) MonitorLoop() {
 			for _, i := range s {
 				values.Add(i.V)
 			}
-			a.ui.graph.Data = values.LastValues(a.ui.myWidth - 2)
+			_, _, w, _ := a.ui.graph.GetInnerRect()
+			vv := values.LastValues(w - 8)
 			var m float64 = 0
-			for _, v := range a.ui.graph.Data {
+			for _, v := range vv {
 				if v > m {
 					m = v
 				}
 			}
 			values.Next()
-			a.ui.graphBox.Title = fmt.Sprintf("Commands [current: %.1f max: %.1f]",
-				a.ui.graph.Data[len(a.ui.graph.Data)-1],
-				m,
-			)
-			size := len(s)
-			a.ui.cmds.Rows = make([][]string, size)
-			if size > 0 {
-				for i, kv := range s {
-					a.ui.cmds.Rows[size-i-1] = []string{kv.K, fmt.Sprintf("%.1f", float64(kv.V)/scale)}
+			a.ui.app.QueueUpdate(func() {
+				p := asciigraph.Plot(vv,
+					asciigraph.Height(4),
+				)
+				a.ui.graph.SetText(p)
+				a.ui.graph.SetTitle(fmt.Sprintf("Commands [current: %.1f max: %.1f]",
+					vv[len(vv)-1],
+					m,
+				))
+				size := len(s)
+				a.ui.cmds.Rows = make([][]string, size)
+				if size > 0 {
+					for i, kv := range s {
+						a.ui.cmds.Rows[size-i-1] = []string{kv.K, fmt.Sprintf("%.1f", float64(kv.V)/scale)}
+					}
 				}
-			}
 
-			size = len(ip)
-			a.ui.ips.Rows = make([][]string, size)
-			if size > 0 {
-				for i, kv := range ip {
-					a.ui.ips.Rows[size-i-1] = []string{kv.K, fmt.Sprintf("%.1f", float64(kv.V)/scale)}
+				size = len(ip)
+				a.ui.ips.Rows = make([][]string, size)
+				if size > 0 {
+					for i, kv := range ip {
+						a.ui.ips.Rows[size-i-1] = []string{kv.K, fmt.Sprintf("%.1f", float64(kv.V)/scale)}
+					}
 				}
-			}
+			})
 
-			if len(a.ui.ips.Rows) > 0 {
-				ui.Render(a.ui.splash, a.ui.cmds, a.ui.ips, a.ui.graphBox)
-			}
 		}
 	}()
 

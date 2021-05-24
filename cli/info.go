@@ -18,31 +18,33 @@ func (a *App) InfoLoop() {
 			if err != nil {
 				a.log.Printf("Info Error : %s", err.Error())
 			} else {
-				if kv["instantaneous_ops_per_sec"] == "" {
-					a.ui.header.Rows[0][1] = "️0 op"
-				} else {
-					ops, err := strconv.ParseFloat(kv["instantaneous_ops_per_sec"], 32)
-					if err != nil {
-						a.log.Printf("Float parse error: %s %s", kv["instantaneous_ops_per_sec"], err)
-						a.ui.header.Rows[0][1] = "☠️"
+				a.ui.app.QueueUpdate(func() {
+					if kv["instantaneous_ops_per_sec"] == "" {
+						a.ui.header.GetCell(0, 1).Text = "️0 op"
 					} else {
-						a.ui.header.Rows[0][1] = fmt.Sprintf("%s ops/s", DisplayUnit(ops))
+						ops, err := strconv.ParseFloat(kv["instantaneous_ops_per_sec"], 32)
+						if err != nil {
+							a.log.Printf("Float parse error: %s %s", kv["instantaneous_ops_per_sec"], err)
+							a.ui.header.GetCell(0, 1).Text = "☠️"
+						} else {
+							a.ui.header.GetCell(0, 1).Text = fmt.Sprintf("%s ops/s", DisplayUnit(ops))
+						}
 					}
-				}
-				iips, err := strconv.ParseFloat(kv["instantaneous_input_kbps"], 32)
-				if err != nil {
-					a.log.Printf("Float parse error: %s %s", kv["instantaneous_input_kbps"], err)
-					a.ui.header.Rows[0][2] = "☠️"
-				} else {
-					a.ui.header.Rows[0][2] = fmt.Sprintf("in: %sb/s", DisplayUnit(iips))
-				}
-				iops, err := strconv.ParseFloat(kv["instantaneous_output_kbps"], 32)
-				if err != nil {
-					a.log.Printf("Float parse error: %s %s", kv["instantaneous_output_kbps"], err)
-					a.ui.header.Rows[0][3] = "☠️"
-				} else {
-					a.ui.header.Rows[0][3] = fmt.Sprintf("out: %sb/s", DisplayUnit(iops))
-				}
+					iips, err := strconv.ParseFloat(kv["instantaneous_input_kbps"], 32)
+					if err != nil {
+						a.log.Printf("Float parse error: %s %s", kv["instantaneous_input_kbps"], err)
+						a.ui.header.GetCell(0, 2).Text = "☠️"
+					} else {
+						a.ui.header.GetCell(0, 2).Text = fmt.Sprintf("in: %sb/s", DisplayUnit(iips))
+					}
+					iops, err := strconv.ParseFloat(kv["instantaneous_output_kbps"], 32)
+					if err != nil {
+						a.log.Printf("Float parse error: %s %s", kv["instantaneous_output_kbps"], err)
+						a.ui.header.GetCell(0, 3).Text = "☠️"
+					} else {
+						a.ui.header.GetCell(0, 3).Text = fmt.Sprintf("out: %sb/s", DisplayUnit(iops))
+					}
+				})
 
 				sys, err := strconv.ParseFloat(kv["used_cpu_sys"], 64)
 				if err != nil {
@@ -56,7 +58,9 @@ func (a *App) InfoLoop() {
 							cpu = monitor.NewCPU(sys, user)
 						} else {
 							s, u := cpu.Tick(sys, user)
-							a.ui.header.Rows[0][0] = fmt.Sprintf("s: %.1f%% u: %.1f%%", s, u)
+							a.ui.app.QueueUpdateDraw(func() {
+								a.ui.header.GetCell(0, 0).Text = fmt.Sprintf("s: %.1f%% u: %.1f%%", s, u)
+							})
 						}
 					}
 				}
@@ -99,8 +103,6 @@ func (a *App) InfoLoop() {
 					ui.Render(a.ui.keyspaces, a.ui.pubsub, a.ui.clients, a.ui.persistence)
 				}
 			}
-
-			ui.Render(a.ui.header)
 
 			time.Sleep(time.Second)
 		}

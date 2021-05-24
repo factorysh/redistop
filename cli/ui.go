@@ -6,13 +6,15 @@ import (
 	"time"
 
 	ui "github.com/gizak/termui/v3"
+
 	"github.com/gizak/termui/v3/widgets"
+	"github.com/rivo/tview"
 )
 
 type AppUI struct {
-	header         *widgets.Table
-	graph          *widgets.Sparkline
-	graphBox       *widgets.SparklineGroup
+	app            *tview.Application
+	header         *tview.Table
+	graph          *tview.TextView
 	splash         *widgets.Paragraph
 	cmds           *widgets.Table
 	ips            *widgets.Table
@@ -32,10 +34,11 @@ type AppUI struct {
 
 func NewAppUI() *AppUI {
 	appUI := &AppUI{
+		app:            tview.NewApplication(),
 		monitorIsReady: false,
 	}
 	appUI.fundation()
-	appUI.WatchResize()
+	//appUI.WatchResize()
 	return appUI
 }
 
@@ -75,15 +78,8 @@ func (a *AppUI) resize() {
 func (a *AppUI) draw() {
 	a.resize()
 
-	if a.myWidth > 80 && len(a.header.Rows[0]) == 4 {
-		a.header.Rows[0] = make([]string, 6)
-	}
-	if a.myWidth == 80 && len(a.header.Rows[0]) == 6 {
-		a.header.Rows[0] = make([]string, 4)
-	}
 	a.header.SetRect(0, 0, a.myWidth, 3)
 
-	a.graphBox.SetRect(0, 3, a.myWidth, a.fatGraphY)
 	if !a.monitorIsReady {
 		a.drawSplash()
 	} else {
@@ -139,18 +135,18 @@ func (a *AppUI) drawSplash() {
 }
 
 func (a *AppUI) fundation() {
-
-	a.header = widgets.NewTable()
-	a.header.Rows = make([][]string, 1)
-	if a.myWidth > 80 {
-		a.header.Rows[0] = make([]string, 6)
-	} else {
-		a.header.Rows[0] = make([]string, 4)
+	a.header = tview.NewTable().SetFixed(1, 4)
+	a.header.SetBorder(true)
+	for i := 0; i < 4; i++ {
+		a.header.SetCell(0, i, tview.NewTableCell("*"))
 	}
-	a.header.Rows[0][0] = ""
-
-	a.graph = widgets.NewSparkline()
-	a.graphBox = widgets.NewSparklineGroup(a.graph)
+	a.graph = tview.NewTextView()
+	a.graph.SetBorder(true)
+	grid := tview.NewGrid().SetRows(3, 0, 3).SetColumns(0, 30, 30).
+		AddItem(a.header, 0, 0, 1, 3, 0, 0, false).
+		AddItem(a.graph, 1, 0, 1, 3, 0, 0, false)
+	a.header.SetTitle("Redistop")
+	a.app.SetRoot(grid, true).SetFocus(grid)
 
 	a.splash = widgets.NewParagraph()
 
