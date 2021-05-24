@@ -20,8 +20,11 @@ type Line struct {
 }
 
 func (r *RedisServer) Monitor(ctx context.Context, evt func(bool)) (chan Line, chan error) {
-	// +1619454979.381488 [1 172.29.1.2:57676] "brpop"
-	line := regexp.MustCompile(`^\+(\d+\.\d+) \[(\d+) ([\d.]+):(\d+)] "(.*?)"`)
+	// IPv4 +1619454979.381488 [1 172.29.1.2:57676] "brpop"
+	// IPv6 +1621757323.274428 [9 [::1]:38824] "DEL" "f00dc225-1975-4590-8a37-9b0ea4ec5acc"
+	// LUA  +1621757323.279920 [9 lua] "DEL" "f00dc225-1975-4590-8a37-9b0ea4ec5acc"
+	
+	line := regexp.MustCompile(`^\+(\d+\.\d+) \[(\d+) ([\d\.]+|\[[0-9a-f\:]+\]|lua):?(\d+)?\] "(.*?)"`)
 
 	lines := make(chan Line)
 	errors := make(chan error)
@@ -76,7 +79,7 @@ func (r *RedisServer) Monitor(ctx context.Context, evt func(bool)) (chan Line, c
 					errors <- fmt.Errorf("monitor %v %v", l, err)
 					break
 				}
-				port, err := strconv.Atoi(l[4])
+				port, err := strconv.Atoi("0"+l[4])
 				if err != nil {
 					errors <- fmt.Errorf("monitor %v %v", l, err)
 					break
