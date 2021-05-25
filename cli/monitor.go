@@ -70,7 +70,7 @@ func (a *App) MonitorLoop() {
 				}
 			}
 			values.Next()
-			a.ui.app.QueueUpdate(func() {
+			a.ui.app.QueueUpdateDraw(func() {
 				p := asciigraph.Plot(vv,
 					asciigraph.Height(4),
 				)
