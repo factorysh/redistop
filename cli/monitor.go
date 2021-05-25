@@ -64,7 +64,7 @@ func (a *App) MonitorLoop() {
 				values.Add(i.V)
 			}
 			_, _, w, _ := a.ui.graph.GetInnerRect()
-			vv := values.LastValues(w - 8)
+			vv := values.LastValues(w - 7)
 			var m float64 = 0
 			for _, v := range vv {
 				if v > m {
