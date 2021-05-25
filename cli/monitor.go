@@ -51,8 +51,9 @@ func (a *App) MonitorLoop() {
 			time.Sleep(a.config.Frequency)
 			a.ui.monitorIsReady = true
 
-			a.ui.splash.Text = ""
-			a.ui.splash.Border = false
+			a.ui.grid.RemoveItem(a.ui.splash)
+			a.ui.grid.AddItem(a.ui.cmds, 2, 0, 1, 1, 0, 0, false).
+				AddItem(a.ui.ips, 2, 1, 1, 1, 0, 0, false)
 			lock.Lock()
 			s := stats.Count(statz.Commands)
 			ip := stats.Count(statz.Ips)

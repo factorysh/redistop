@@ -14,9 +14,10 @@ import (
 
 type AppUI struct {
 	app            *tview.Application
+	grid           *tview.Grid
 	header         *tview.Table
 	graph          *tview.TextView
-	splash         *widgets.Paragraph
+	splash         *tview.TextView
 	cmds           *tview.Table
 	ips            *tview.Table
 	memories       *tview.Table
@@ -124,9 +125,7 @@ func (a *AppUI) drawSplash() {
 		b.WriteString(line)
 		b.WriteRune('\n')
 	}
-	a.splash.Text = b.String()
-	a.splash.SetRect(0, a.fatGraphY, 80, a.height-3)
-	ui.Render(a.splash)
+	a.splash.SetText(b.String())
 }
 
 func (a *AppUI) fundation() {
@@ -139,7 +138,7 @@ func (a *AppUI) fundation() {
 	a.graph = tview.NewTextView()
 	a.graph.SetBorder(true)
 
-	a.splash = widgets.NewParagraph()
+	a.splash = tview.NewTextView()
 
 	a.cmds = tview.NewTable()
 	a.cmds.SetBorder(true)
@@ -157,14 +156,13 @@ func (a *AppUI) fundation() {
 	a.pile = tview.NewFlex()
 	a.pile.SetDirection(tview.FlexRow)
 
-	grid := tview.NewGrid().SetRows(3, 7, 0).SetColumns(0, 0, 40).
+	a.grid = tview.NewGrid().SetRows(3, 7, 0).SetColumns(0, 0, 40).
 		AddItem(a.header, 0, 0, 1, 3, 0, 0, false).
 		AddItem(a.graph, 1, 0, 1, 3, 0, 0, false).
-		AddItem(a.cmds, 2, 0, 1, 1, 0, 0, false).
-		AddItem(a.ips, 2, 1, 1, 1, 0, 0, false).
+		AddItem(a.splash, 2, 0, 1, 2, 0, 0, false).
 		AddItem(a.pile, 2, 2, 1, 1, 0, 0, false)
 
-	a.app.SetRoot(grid, true).SetFocus(grid)
+	a.app.SetRoot(a.grid, true).SetFocus(a.grid)
 
 	a.keyspaces = tview.NewTable()
 	a.keyspaces.SetBorder(true)
@@ -206,6 +204,7 @@ func (a *AppUI) fundation() {
 		a.persistence.SetCellSimple(i, 1, "")
 	}
 	a.pile.AddItem(a.persistence, 5, 1, false)
+	a.drawSplash()
 
 }
 
