@@ -70,7 +70,7 @@ func (a *App) Serve() error {
 
 	a.MonitorLoop()
 	a.InfoLoop()
-	//a.MemoryLoop()
+	a.MemoryLoop()
 
 	/*
 		for e := range ui.PollEvents() {

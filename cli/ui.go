@@ -19,12 +19,12 @@ type AppUI struct {
 	splash         *widgets.Paragraph
 	cmds           *tview.Table
 	ips            *tview.Table
-	memories       *widgets.Table
-	pile           *Pile
-	keyspaces      *widgets.Table
-	clients        *widgets.Table
-	persistence    *widgets.Table
-	pubsub         *widgets.Table
+	memories       *tview.Table
+	pile           *tview.Flex
+	keyspaces      *tview.Table
+	clients        *tview.Table
+	persistence    *tview.Table
+	pubsub         *tview.Table
 	errorPanel     *widgets.Paragraph
 	myWidth        int
 	fatGraphY      int
@@ -98,12 +98,6 @@ func (a *AppUI) draw() {
 	blank.Border = false
 	ui.Render(blank)
 
-	a.pile.y = a.fatGraphY
-	a.pile.ComputePosition()
-	if a.myWidth > 80 {
-		a.pile.Render()
-	}
-
 	a.errorPanel.SetRect(0, a.height-3, a.myWidth, a.height)
 	ui.Render(a.errorPanel)
 }
@@ -157,50 +151,62 @@ func (a *AppUI) fundation() {
 	a.ips.SetSeparator(tcell.RuneVLine)
 	a.ips.SetTitle("By IP/s")
 
-	grid := tview.NewGrid().SetRows(3, 7, 0).SetColumns(0, 30, 30).
-		AddItem(a.header, 0, 0, 1, 3, 0, 0, false).
-		AddItem(a.graph, 1, 0, 1, 3, 0, 0, false).
-		AddItem(a.cmds, 2, 0, 1, 1, 0, 0, false).
-		AddItem(a.ips, 2, 1, 1, 1, 0, 0, false)
-
-	a.app.SetRoot(grid, true).SetFocus(grid)
-
 	a.errorPanel = widgets.NewParagraph()
 	a.errorPanel.Title = "Error"
 
-	a.pile = NewPile(81, a.fatGraphY, 39)
+	a.pile = tview.NewFlex()
+	a.pile.SetDirection(tview.FlexRow)
 
-	a.keyspaces = widgets.NewTable()
-	a.pile.Add(a.keyspaces)
-	a.keyspaces.RowSeparator = false
-	a.keyspaces.Title = "Keyspace"
-	a.keyspaces.Rows = make([][]string, 1)
+	grid := tview.NewGrid().SetRows(3, 7, 0).SetColumns(0, 0, 40).
+		AddItem(a.header, 0, 0, 1, 3, 0, 0, false).
+		AddItem(a.graph, 1, 0, 1, 3, 0, 0, false).
+		AddItem(a.cmds, 2, 0, 1, 1, 0, 0, false).
+		AddItem(a.ips, 2, 1, 1, 1, 0, 0, false).
+		AddItem(a.pile, 2, 2, 1, 1, 0, 0, false)
 
-	a.pubsub = widgets.NewTable()
-	a.pile.Add(a.pubsub)
-	a.pubsub.RowSeparator = false
-	a.pubsub.Title = "Pubsub"
-	a.pubsub.Rows = make([][]string, 1)
+	a.app.SetRoot(grid, true).SetFocus(grid)
 
-	a.memories = widgets.NewTable()
-	a.pile.Add(a.memories)
-	a.memories.RowSeparator = false
-	a.memories.Title = "Memory"
-	a.memories.Rows = make([][]string, 4)
+	a.keyspaces = tview.NewTable()
+	a.keyspaces.SetBorder(true)
+	a.keyspaces.SetTitle("Keyspace")
+	a.keyspaces.SetCellSimple(0, 0, "")
+	a.keyspaces.SetCellSimple(0, 1, "")
+	a.pile.AddItem(a.keyspaces, 3, 1, false)
 
-	a.clients = widgets.NewTable()
-	a.pile.Add(a.clients)
-	a.clients.RowSeparator = false
-	a.clients.Title = "Clients"
-	a.clients.Rows = make([][]string, 2)
+	a.pubsub = tview.NewTable()
+	a.pubsub.SetBorder(true)
+	a.pubsub.SetTitle("Pubsub")
+	a.pubsub.SetCellSimple(0, 0, "")
+	a.pubsub.SetCellSimple(0, 1, "")
+	a.pile.AddItem(a.pubsub, 3, 1, false)
 
-	a.persistence = widgets.NewTable()
-	a.pile.Add(a.persistence)
-	a.persistence.RowSeparator = false
-	a.persistence.Title = "Persistance"
-	a.persistence.Rows = make([][]string, 3)
+	a.memories = tview.NewTable()
+	a.memories.SetBorder(true)
+	a.memories.SetTitle("Memory")
+	for i := 0; i < 4; i++ {
+		a.memories.SetCellSimple(i, 0, "")
+		a.memories.SetCellSimple(i, 1, "")
+	}
+	a.pile.AddItem(a.memories, 6, 1, false)
 
-	a.pile.ComputePosition()
+	a.clients = tview.NewTable()
+	a.clients.SetBorder(true)
+	a.clients.SetTitle("Clients")
+	for i := 0; i < 2; i++ {
+		a.clients.SetCellSimple(i, 0, "")
+		a.clients.SetCellSimple(i, 1, "")
+	}
+	a.pile.AddItem(a.clients, 4, 1, false)
+
+	a.persistence = tview.NewTable()
+	a.persistence.SetBorder(true)
+	a.persistence.SetTitle("Persistance")
+	for i := 0; i < 3; i++ {
+		a.persistence.SetCellSimple(i, 0, "")
+		a.persistence.SetCellSimple(i, 1, "")
+	}
+	a.pile.AddItem(a.persistence, 5, 1, false)
+
 }
 
 func (a *AppUI) Alert(msg string) {

@@ -3,8 +3,6 @@ package cli
 import (
 	"fmt"
 	"time"
-
-	ui "github.com/gizak/termui/v3"
 )
 
 func (a *App) MemoryLoop() {
@@ -18,20 +16,21 @@ func (a *App) MemoryLoop() {
 					a.ui.header.GetCell(0, 4).Text = fmt.Sprintf("keys: %d", m.KeysCount)
 					a.ui.header.GetCell(0, 5).Text = fmt.Sprintf("mem: %s", DisplayUnit(float64(m.PeakAllocated)))
 				}
-				a.ui.memories.Rows = m.Table()
 			}
 			kv, err := a.redis.Info()
 			if err != nil {
 				a.log.Printf("Info Memory Error : %s", err.Error())
 			} else {
-				a.ui.memories.Title = fmt.Sprintf("Memory [ %s ]", kv["maxmemory_policy"])
+				a.ui.app.QueueUpdate(func() {
+					a.ui.memories.SetTitle(fmt.Sprintf("Memory [ %s ]", kv["maxmemory_policy"]))
+					for i, line := range m.Table() {
+						for j, col := range line {
+							a.ui.memories.GetCell(i, j).Text = col
+						}
+					}
+				})
 			}
 
-			if a.ui.myWidth > 80 {
-				if len(a.ui.memories.Rows) > 0 && len(a.ui.memories.Rows[0]) > 0 {
-					ui.Render(a.ui.memories)
-				}
-			}
 			time.Sleep(5 * time.Second)
 		}
 	}()
