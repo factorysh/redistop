@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gdamore/tcell/v2"
 	ui "github.com/gizak/termui/v3"
 
 	"github.com/gizak/termui/v3/widgets"
@@ -148,10 +149,12 @@ func (a *AppUI) fundation() {
 
 	a.cmds = tview.NewTable()
 	a.cmds.SetBorder(true)
+	a.cmds.SetSeparator(tcell.RuneVLine)
 	a.cmds.SetTitle("By command/s")
 
 	a.ips = tview.NewTable()
 	a.ips.SetBorder(true)
+	a.ips.SetSeparator(tcell.RuneVLine)
 	a.ips.SetTitle("By IP/s")
 
 	grid := tview.NewGrid().SetRows(3, 7, 0).SetColumns(0, 30, 30).

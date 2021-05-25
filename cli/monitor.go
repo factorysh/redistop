@@ -84,7 +84,7 @@ func (a *App) MonitorLoop() {
 				if size > 0 {
 					for i, kv := range s {
 						a.ui.cmds.SetCell(size-i-1, 0,
-							tview.NewTableCell(kv.K).SetAttributes(tcell.AttrBold))
+							tview.NewTableCell(fmt.Sprintf("%-15s", kv.K)).SetAttributes(tcell.AttrBold))
 						a.ui.cmds.SetCell(size-i-1, 1,
 							tview.NewTableCell(fmt.Sprintf("%.1f", float64(kv.V)/scale)).
 								SetAlign(tview.AlignRight))
@@ -96,7 +96,7 @@ func (a *App) MonitorLoop() {
 				if size > 0 {
 					for i, kv := range ip {
 						a.ui.ips.SetCell(size-i-1, 0,
-							tview.NewTableCell(kv.K).SetAttributes(tcell.AttrItalic))
+							tview.NewTableCell(fmt.Sprintf("%-20s", kv.K)).SetAttributes(tcell.AttrItalic))
 						a.ui.ips.SetCellSimple(size-i-1, 1, fmt.Sprintf("%.1f", float64(kv.V)/scale))
 					}
 				}
