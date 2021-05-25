@@ -106,7 +106,7 @@ func (a *AppUI) fundation() {
 	a.ips.SetSeparator(tcell.RuneVLine)
 	a.ips.SetTitle("By IP/s")
 
-	a.errorPanel = tview.NewTextView()
+	a.errorPanel = tview.NewTextView().SetTextColor(tcell.GetColor("red")).SetMaxLines(1)
 
 	a.pile = tview.NewFlex()
 	a.pile.SetDirection(tview.FlexRow)
