@@ -3,7 +3,6 @@ package cli
 import (
 	"context"
 	"fmt"
-	"log"
 	"sync"
 	"time"
 
@@ -20,11 +19,7 @@ func (a *App) MonitorLoop() {
 	lock := sync.Mutex{}
 
 	lines, monitorErrors := a.redis.Monitor(context.TODO(), func(ok bool) {
-		if ok {
-			a.ui.app.QueueUpdate(func() {
-
-			})
-		} else {
+		if !ok {
 			a.ui.Alert("Not connected")
 		}
 	})
@@ -32,7 +27,7 @@ func (a *App) MonitorLoop() {
 	go func() {
 		for {
 			err := <-monitorErrors
-			log.Printf("%v", err)
+			a.ui.Alert(fmt.Sprintf("%v", err))
 		}
 	}()
 
