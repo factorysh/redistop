@@ -39,12 +39,6 @@ func (a *App) Serve() error {
 		return err
 	}
 
-	/*
-		if err := ui.Init(); err != nil {
-			return fmt.Errorf("failed to initialize termui: %v", err)
-		}
-		defer ui.Close()
-	*/
 	a.ui = NewAppUI()
 
 	infos, err := a.redis.Info()

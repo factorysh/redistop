@@ -3,12 +3,9 @@ package cli
 import (
 	"bytes"
 	"strings"
-	"time"
 
 	"github.com/gdamore/tcell/v2"
-	ui "github.com/gizak/termui/v3"
 
-	"github.com/gizak/termui/v3/widgets"
 	"github.com/rivo/tview"
 )
 
@@ -26,10 +23,9 @@ type AppUI struct {
 	clients        *tview.Table
 	persistence    *tview.Table
 	pubsub         *tview.Table
-	errorPanel     *widgets.Paragraph
+	errorPanel     *tview.TextView
 	myWidth        int
 	fatGraphY      int
-	width          int
 	height         int
 	monitorIsReady bool
 }
@@ -64,57 +60,6 @@ const art = `
              '-.__.-'
 `
 
-func (a *AppUI) resize() {
-	a.width, a.height = ui.TerminalDimensions()
-	if a.width >= 120 {
-		a.myWidth = 120
-	} else {
-		a.myWidth = 80
-	}
-	a.fatGraphY = 8
-	if a.height > 40 {
-		a.fatGraphY = 16
-	}
-}
-
-func (a *AppUI) draw() {
-	a.resize()
-
-	a.header.SetRect(0, 0, a.myWidth, 3)
-
-	if !a.monitorIsReady {
-		a.drawSplash()
-	} else {
-		blank := ui.NewBlock()
-		blank.SetRect(0, a.fatGraphY, 80, a.height-3)
-		blank.Border = false
-		ui.Render(blank)
-	}
-
-	a.cmds.SetRect(0, a.fatGraphY, 40, a.height-3)
-	a.ips.SetRect(41, a.fatGraphY, 80, a.height-3)
-
-	blank := ui.NewBlock()
-	blank.SetRect(80, 0, 120, a.height)
-	blank.Border = false
-	ui.Render(blank)
-
-	a.errorPanel.SetRect(0, a.height-3, a.myWidth, a.height)
-	ui.Render(a.errorPanel)
-}
-
-func (a *AppUI) WatchResize() {
-	go func() {
-		for {
-			width, height := ui.TerminalDimensions()
-			if a.width != width || a.height != height {
-				a.draw()
-			}
-			time.Sleep(time.Second)
-		}
-	}()
-}
-
 func (a *AppUI) drawSplash() {
 	b := &bytes.Buffer{}
 	for i := 0; i < (a.height-a.fatGraphY-3-17)/2; i++ {
@@ -141,9 +86,9 @@ func (a *AppUI) fundation() {
 			if action == tview.MouseLeftDoubleClick {
 				_, _, _, h := a.graph.GetInnerRect()
 				if h <= 5 {
-					a.grid.SetRows(3, 12, 0)
+					a.grid.SetRows(3, 12, 0, 1)
 				} else {
-					a.grid.SetRows(3, 7, 0)
+					a.grid.SetRows(3, 7, 0, 1)
 				}
 			}
 			return action, event
@@ -161,17 +106,17 @@ func (a *AppUI) fundation() {
 	a.ips.SetSeparator(tcell.RuneVLine)
 	a.ips.SetTitle("By IP/s")
 
-	a.errorPanel = widgets.NewParagraph()
-	a.errorPanel.Title = "Error"
+	a.errorPanel = tview.NewTextView()
 
 	a.pile = tview.NewFlex()
 	a.pile.SetDirection(tview.FlexRow)
 
-	a.grid = tview.NewGrid().SetRows(3, 7, 0).SetColumns(0, 0, 40).
+	a.grid = tview.NewGrid().SetRows(3, 7, 0, 1).SetColumns(0, 0, 40).
 		AddItem(a.header, 0, 0, 1, 3, 0, 0, false).
 		AddItem(a.graph, 1, 0, 1, 3, 0, 0, false).
 		AddItem(a.splash, 2, 0, 1, 2, 0, 0, false).
-		AddItem(a.pile, 2, 2, 1, 1, 0, 0, false)
+		AddItem(a.pile, 2, 2, 1, 1, 0, 0, false).
+		AddItem(a.errorPanel, 3, 0, 1, 3, 0, 0, false)
 
 	a.app.SetRoot(a.grid, true).SetFocus(a.grid).EnableMouse(true)
 
@@ -220,16 +165,7 @@ func (a *AppUI) fundation() {
 }
 
 func (a *AppUI) Alert(msg string) {
-	argh := widgets.NewParagraph()
-	argh.SetRect(20, 6, a.myWidth-20, 11)
-	buff := &bytes.Buffer{}
-	buff.WriteRune('\n')
-	for i := 0; i < (a.myWidth-40-len(msg))/2; i++ {
-		buff.WriteRune(' ')
-	}
-	buff.WriteString(msg)
-	argh.Text = buff.String()
-	argh.TextStyle.Fg = ui.ColorRed
-	argh.Block.BorderStyle.Fg = ui.ColorRed
-	ui.Render(argh)
+	a.app.QueueUpdateDraw(func() {
+		a.errorPanel.SetText(msg)
+	})
 }
