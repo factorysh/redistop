@@ -136,7 +136,18 @@ func (a *AppUI) fundation() {
 		a.header.SetCell(0, i, tview.NewTableCell("*"))
 	}
 	a.graph = tview.NewTextView()
-	a.graph.SetBorder(true)
+	a.graph.SetBorder(true).SetMouseCapture(
+		func(action tview.MouseAction, event *tcell.EventMouse) (tview.MouseAction, *tcell.EventMouse) {
+			if action == tview.MouseLeftDoubleClick {
+				_, _, _, h := a.graph.GetInnerRect()
+				if h <= 5 {
+					a.grid.SetRows(3, 12, 0)
+				} else {
+					a.grid.SetRows(3, 7, 0)
+				}
+			}
+			return action, event
+		})
 
 	a.splash = tview.NewTextView()
 
@@ -162,7 +173,7 @@ func (a *AppUI) fundation() {
 		AddItem(a.splash, 2, 0, 1, 2, 0, 0, false).
 		AddItem(a.pile, 2, 2, 1, 1, 0, 0, false)
 
-	a.app.SetRoot(a.grid, true).SetFocus(a.grid)
+	a.app.SetRoot(a.grid, true).SetFocus(a.grid).EnableMouse(true)
 
 	a.keyspaces = tview.NewTable()
 	a.keyspaces.SetBorder(true)

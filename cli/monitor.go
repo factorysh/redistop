@@ -54,6 +54,7 @@ func (a *App) MonitorLoop() {
 			a.ui.grid.RemoveItem(a.ui.splash)
 			a.ui.grid.AddItem(a.ui.cmds, 2, 0, 1, 1, 0, 0, false).
 				AddItem(a.ui.ips, 2, 1, 1, 1, 0, 0, false)
+
 			lock.Lock()
 			s := stats.Count(statz.Commands)
 			ip := stats.Count(statz.Ips)
@@ -72,8 +73,9 @@ func (a *App) MonitorLoop() {
 			}
 			values.Next()
 			a.ui.app.QueueUpdateDraw(func() {
+				_, _, _, h := a.ui.graph.GetInnerRect()
 				p := asciigraph.Plot(vv,
-					asciigraph.Height(4),
+					asciigraph.Height(h-1),
 				)
 				a.ui.graph.SetText(p)
 				a.ui.graph.SetTitle(fmt.Sprintf("Commands [current: %.1f max: %.1f]",
