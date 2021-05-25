@@ -55,8 +55,6 @@ func (a *App) Serve() error {
 			infos["hz"],
 			infos["uptime_in_days"],
 		))
-	//ui.Render(a.ui.graphBox)
-	//ui.Render(a.ui.errorPanel)
 
 	a.log = &Logger{
 		block: a.ui.errorPanel,
@@ -66,12 +64,5 @@ func (a *App) Serve() error {
 	a.InfoLoop()
 	a.MemoryLoop()
 
-	/*
-		for e := range ui.PollEvents() {
-			if e.Type == ui.KeyboardEvent {
-				break
-			}
-		}
-	*/
 	return a.ui.app.Run()
 }
