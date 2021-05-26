@@ -41,7 +41,7 @@ func (a *App) MonitorLoop() {
 
 	go func() {
 		scale := float64(a.config.Frequency) / float64(time.Second)
-		values := circular.NewCircular(118, scale)
+		values := circular.NewCircular(250, scale)
 		for {
 			time.Sleep(a.config.Frequency)
 			a.ui.monitorIsReady = true
