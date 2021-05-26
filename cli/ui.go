@@ -88,7 +88,11 @@ func (a *AppUI) fundation() {
 				if h <= 5 {
 					a.grid.SetRows(3, 12, 0, 1)
 				} else {
-					a.grid.SetRows(3, 7, 0, 1)
+					if h <= 12 {
+						a.grid.SetRows(3, 17, 0, 1)
+					} else {
+						a.grid.SetRows(3, 7, 0, 1)
+					}
 				}
 			}
 			return action, event
