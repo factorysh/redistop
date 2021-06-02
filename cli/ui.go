@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"bytes"
 	"strings"
 	"sync"
 
@@ -98,24 +97,7 @@ func NewAppUI() *AppUI {
 		monitorIsReady: false,
 	}
 	appUI.fundation()
-	//appUI.WatchResize()
 	return appUI
-}
-
-func (a *AppUI) drawSplash() {
-	b := &bytes.Buffer{}
-	x, _, _, h := a.pile.GetRect()
-	w := x
-	for i := 0; i < (h-17)/2; i++ {
-		b.WriteRune('\n')
-	}
-	for _, line := range strings.Split(art, "\n") {
-		for i := 0; i < (w-34)/2; i++ {
-			b.WriteRune(' ')
-		}
-		b.WriteString(line)
-		b.WriteRune('\n')
-	}
 }
 
 func (a *AppUI) fundation() {
