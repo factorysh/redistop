@@ -3,6 +3,7 @@ package cli
 import (
 	"bytes"
 	"strings"
+	"sync"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/guptarohit/asciigraph"
@@ -30,6 +31,7 @@ type AppUI struct {
 
 type GraphBox struct {
 	*tview.Box
+	lock   *sync.Mutex
 	series []float64
 }
 
@@ -37,6 +39,7 @@ func NewGraphBox() *GraphBox {
 	g := &GraphBox{
 		Box:    tview.NewBox(),
 		series: make([]float64, 0),
+		lock:   &sync.Mutex{},
 	}
 	g.SetBorder(true)
 	return g
@@ -47,6 +50,8 @@ func (g *GraphBox) SetSeries(series []float64) {
 }
 
 func (g *GraphBox) Draw(screen tcell.Screen) {
+	g.lock.Lock()
+	defer g.lock.Unlock()
 	g.DrawForSubclass(screen, g)
 	if len(g.series) > 0 {
 		x, y, width, height := g.GetInnerRect()
