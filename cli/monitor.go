@@ -9,7 +9,6 @@ import (
 	"github.com/factorysh/redistop/circular"
 	"github.com/factorysh/redistop/stats"
 	"github.com/gdamore/tcell/v2"
-	"github.com/guptarohit/asciigraph"
 	"github.com/rivo/tview"
 )
 
@@ -68,11 +67,7 @@ func (a *App) MonitorLoop() {
 			}
 			values.Next()
 			a.ui.app.QueueUpdateDraw(func() {
-				_, _, _, h := a.ui.graph.GetInnerRect()
-				p := asciigraph.Plot(vv,
-					asciigraph.Height(h-1),
-				)
-				a.ui.graph.SetText(p)
+				a.ui.graph.SetSeries(vv)
 				a.ui.graph.SetTitle(fmt.Sprintf("Commands [current: %.1f max: %.1f]",
 					vv[len(vv)-1],
 					m,

@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/gdamore/tcell/v2"
+	"github.com/guptarohit/asciigraph"
 
 	"github.com/rivo/tview"
 )
@@ -13,7 +14,7 @@ type AppUI struct {
 	app            *tview.Application
 	grid           *tview.Grid
 	header         *tview.Table
-	graph          *tview.TextView
+	graph          *GraphBox
 	splash         *tview.Box
 	cmds           *tview.Table
 	ips            *tview.Table
@@ -25,6 +26,45 @@ type AppUI struct {
 	pubsub         *tview.Table
 	errorPanel     *tview.TextView
 	monitorIsReady bool
+}
+
+type GraphBox struct {
+	*tview.Box
+	series []float64
+}
+
+func NewGraphBox() *GraphBox {
+	g := &GraphBox{
+		Box:    tview.NewBox(),
+		series: make([]float64, 0),
+	}
+	g.SetBorder(true)
+	return g
+}
+
+func (g *GraphBox) SetSeries(series []float64) {
+	g.series = series
+}
+
+func (g *GraphBox) Draw(screen tcell.Screen) {
+	g.DrawForSubclass(screen, g)
+	if len(g.series) > 0 {
+		x, y, width, height := g.GetInnerRect()
+		p := asciigraph.Plot(g.series, asciigraph.Height(height-1))
+		for i, line := range strings.Split(p, "\n") {
+			fullLine := make([]rune, width)
+			for j := 0; j < width; j++ {
+				fullLine[j] = ' '
+			}
+			copy(fullLine, []rune(line))
+			screen.SetContent(x, y+i, fullLine[0], fullLine[1:], tcell.StyleDefault)
+		}
+	}
+}
+
+func (g *GraphBox) GetInnerRect() (int, int, int, int) {
+	x, y, width, height := g.GetRect()
+	return x + 1, y + 1, width - 2, height - 2
 }
 
 const art = `
@@ -80,7 +120,7 @@ func (a *AppUI) fundation() {
 	for i := 0; i < 4; i++ {
 		a.header.SetCell(0, i, tview.NewTableCell("*"))
 	}
-	a.graph = tview.NewTextView()
+	a.graph = NewGraphBox()
 	a.graph.SetBorder(true).SetMouseCapture(
 		func(action tview.MouseAction, event *tcell.EventMouse) (tview.MouseAction, *tcell.EventMouse) {
 			if action == tview.MouseLeftDoubleClick {
