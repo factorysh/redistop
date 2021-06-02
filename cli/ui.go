@@ -14,7 +14,7 @@ type AppUI struct {
 	grid           *tview.Grid
 	header         *tview.Table
 	graph          *tview.TextView
-	splash         *tview.TextView
+	splash         *tview.Box
 	cmds           *tview.Table
 	ips            *tview.Table
 	memories       *tview.Table
@@ -24,20 +24,7 @@ type AppUI struct {
 	persistence    *tview.Table
 	pubsub         *tview.Table
 	errorPanel     *tview.TextView
-	myWidth        int
-	fatGraphY      int
-	height         int
 	monitorIsReady bool
-}
-
-func NewAppUI() *AppUI {
-	appUI := &AppUI{
-		app:            tview.NewApplication(),
-		monitorIsReady: false,
-	}
-	appUI.fundation()
-	//appUI.WatchResize()
-	return appUI
 }
 
 const art = `
@@ -60,17 +47,30 @@ const art = `
              '-.__.-'
 `
 
+func NewAppUI() *AppUI {
+	appUI := &AppUI{
+		app:            tview.NewApplication(),
+		monitorIsReady: false,
+	}
+	appUI.fundation()
+	//appUI.WatchResize()
+	return appUI
+}
+
 func (a *AppUI) drawSplash() {
 	b := &bytes.Buffer{}
-	for i := 0; i < (a.height-a.fatGraphY-3-17)/2; i++ {
+	x, _, _, h := a.pile.GetRect()
+	w := x
+	for i := 0; i < (h-17)/2; i++ {
 		b.WriteRune('\n')
 	}
 	for _, line := range strings.Split(art, "\n") {
-		b.WriteString("                          ")
+		for i := 0; i < (w-34)/2; i++ {
+			b.WriteRune(' ')
+		}
 		b.WriteString(line)
 		b.WriteRune('\n')
 	}
-	a.splash.SetText(b.String())
 }
 
 func (a *AppUI) fundation() {
@@ -98,7 +98,17 @@ func (a *AppUI) fundation() {
 			return action, event
 		})
 
-	a.splash = tview.NewTextView()
+	a.splash = tview.NewBox()
+	a.splash.SetDrawFunc(func(screen tcell.Screen, x int, y int, width int, height int) (int, int, int, int) {
+		xs := (width - 34) / 2
+		ys := (height - 16) / 2
+		for i, line := range strings.Split(art, "\n") {
+			for j, l := range line {
+				screen.SetCell(x+xs+j, y+ys+i, tcell.StyleDefault, l)
+			}
+		}
+		return a.splash.GetInnerRect()
+	})
 
 	a.cmds = tview.NewTable()
 	a.cmds.SetBorder(true)
@@ -164,7 +174,6 @@ func (a *AppUI) fundation() {
 		a.persistence.SetCellSimple(i, 1, "")
 	}
 	a.pile.AddItem(a.persistence, 5, 1, false)
-	a.drawSplash()
 
 }
 
