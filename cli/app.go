@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/factorysh/redistop/monitor"
-	ui "github.com/gizak/termui/v3"
 
 	_log "log"
 )
@@ -40,11 +39,6 @@ func (a *App) Serve() error {
 		return err
 	}
 
-	if err := ui.Init(); err != nil {
-		return fmt.Errorf("failed to initialize termui: %v", err)
-	}
-	defer ui.Close()
-
 	a.ui = NewAppUI()
 
 	infos, err := a.redis.Info()
@@ -52,17 +46,15 @@ func (a *App) Serve() error {
 		return err
 	}
 
-	a.ui.header.Title = fmt.Sprintf("Redis Top -[ v%s/%s pid: %s port: %s hz: %s uptime: %sd ]",
-		infos["redis_version"],
-		infos["multiplexing_api"],
-		infos["process_id"],
-		infos["tcp_port"],
-		infos["hz"],
-		infos["uptime_in_days"],
-	)
-	ui.Render(a.ui.header)
-	ui.Render(a.ui.graphBox)
-	ui.Render(a.ui.errorPanel)
+	a.ui.header.SetTitle(
+		fmt.Sprintf("Redis Top -[ v%s/%s pid: %s port: %s hz: %s uptime: %sd ]",
+			infos["redis_version"],
+			infos["multiplexing_api"],
+			infos["process_id"],
+			infos["tcp_port"],
+			infos["hz"],
+			infos["uptime_in_days"],
+		))
 
 	a.log = &Logger{
 		block: a.ui.errorPanel,
@@ -72,10 +64,5 @@ func (a *App) Serve() error {
 	a.InfoLoop()
 	a.MemoryLoop()
 
-	for e := range ui.PollEvents() {
-		if e.Type == ui.KeyboardEvent {
-			break
-		}
-	}
-	return nil
+	return a.ui.app.Run()
 }
